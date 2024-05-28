@@ -1,5 +1,6 @@
 using BepuNativeAOTShared;
 using BepuPhysics;
+using BepuUtilities;
 using BepuUtilities.Memory;
 
 namespace BepuNative;
@@ -18,21 +19,21 @@ public class TransformExtractor
     public void Refresh(Simulation simulation)
     {
         Cache.Transforms.Clear();
-        for (int i = 0; i < simulation.Bodies.Sets.Length; ++i)
+        for (int setIndex = 0; setIndex < simulation.Bodies.Sets.Length; ++setIndex)
         {
-            ref var set = ref simulation.Bodies.Sets[i];
-            if (set.Allocated) //Islands are stored noncontiguously; skip those which have been deallocated.
+            ref var set = ref simulation.Bodies.Sets[setIndex];
+            
+            if (!set.Allocated) continue; //Islands are stored non-contiguously; skip those which have been deallocated.
+            
+            for (int bodyIndex = 0; bodyIndex < set.Count; ++bodyIndex)
             {
-                for (int bodyIndex = 0; bodyIndex < set.Count; ++bodyIndex)
-                {
-                    AddBodyShape(simulation.Bodies, i, bodyIndex, ref Cache, Pool);
-                }
+                AddBodyShape(simulation.Bodies, setIndex, bodyIndex, ref Cache, Pool);
             }
         }
 
-        for (int i = 0; i < simulation.Statics.Count; ++i)
+        for (int setIndex = 0; setIndex < simulation.Statics.Count; ++setIndex)
         {
-            AddStaticShape(simulation.Statics, i, ref Cache, Pool);
+            AddStaticShape(simulation.Statics, setIndex, ref Cache, Pool);
         }
     }
 

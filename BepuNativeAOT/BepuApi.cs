@@ -47,16 +47,17 @@ public static class BepuApi
         _emptyIndexes = null;
         _bufferPool = null;
     }
-        
+    
     [UnmanagedCallersOnly(EntryPoint = "CreateSimulationInstance")]
-    public static int CreateSimulationInstance()
+    public static int CreateSimulationInstance(SimulationDef def)
     {
         var sim = Simulation
             .Create(
                 _bufferPool,
-                new NarrowPhaseCallbacks(new SpringSettings(30, 1)),
-                new PoseIntegratorCallbacks(new Vector3(0, -10, 0)),
-                new SolveDescription(8, 1));
+                new NarrowPhaseCallbacks(new SpringSettings(def.SpringFrequency, def.SpringDamping)),
+                new PoseIntegratorCallbacks(def.Gravity, def.GlobalLinearDamping, def.GlobalAngularDamping),
+                new SolveDescription(def.VelocityIteration, def.SubStepping));
+        
         var instance = new SimInstance(sim, _bufferPool);
 
         int index;
@@ -159,15 +160,21 @@ public static class BepuApi
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddBoxShape")]
-    public static uint AddBoxShape(int simId, float width, float height, float length)
+    public static uint AddBoxShape(int simId, BoxData data)
     {
-        return _instances[simId].Simulation.Shapes.Add(new Box(width, height, length)).Packed;
+        return _instances[simId].Simulation.Shapes.Add(Unsafe.As<BoxData,Box>(ref data)).Packed;
     }
         
     [UnmanagedCallersOnly(EntryPoint = "AddSphereShape")]
-    public static uint AddSphereShape(int simId, float radius)
+    public static uint AddSphereShape(int simId, SphereData data)
     {
-        return _instances[simId].Simulation.Shapes.Add(new Sphere(radius)).Packed;
+        return _instances[simId].Simulation.Shapes.Add(Unsafe.As<SphereData,Sphere>(ref data)).Packed;
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "AddCapsuleShape")]
+    public static uint AddCapsuleShape(int simId, CapsuleData data)
+    {
+        return _instances[simId].Simulation.Shapes.Add(Unsafe.As<CapsuleData,Capsule>(ref data)).Packed;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Step")]
@@ -177,7 +184,7 @@ public static class BepuApi
     }
     
     [UnmanagedCallersOnly(EntryPoint = "Sleep")]
-    public static void Sleep(int simId, float dt)
+    public static void Sleep(int simId)
     {
         var simulation = _instances[simId].Simulation;
         simulation.Sleep(_dispatcher);
@@ -205,7 +212,7 @@ public static class BepuApi
     }
     
     [UnmanagedCallersOnly(EntryPoint = "IncrementallyOptimizeDataStructures")]
-    public static void IncrementallyOptimizeDataStructures(int simId, float dt)
+    public static void IncrementallyOptimizeDataStructures(int simId)
     {
         var simulation = _instances[simId].Simulation;
         simulation.IncrementallyOptimizeDataStructures(_dispatcher);

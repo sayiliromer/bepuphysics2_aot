@@ -6,17 +6,21 @@ namespace BepuNativeAOTWrapper
     public partial struct SimulationHandle
     {
         public int Id;
-        
-        public static SimulationHandle Create()
+
+        public static SimulationHandle Create(SimulationDef? def = null)
         {
-            var id = CreateSimulationInstance();
+            if (!def.HasValue)
+            {
+                def = SimulationDef.Default;
+            }
+            
+            var id = CreateSimulationInstance(def.Value);
 
             return new SimulationHandle()
             {
                 Id = id
             };
         }
-
 
         public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, ShapeHandle shape, float sleepThreshold)
         {
@@ -79,18 +83,27 @@ namespace BepuNativeAOTWrapper
             return GetTransformPointer(Id);
         }
 
-        public ShapeHandle AddBoxShape(float width, float height, float length)
+        public ShapeHandle AddBoxShape(BoxData data)
         {
-            var packed = AddBoxShape(Id, width, height, length);
+            var packed = AddBoxShape(Id, data);
             return new ShapeHandle()
             {
                 Packed = packed
             };
         }
         
-        public ShapeHandle AddSphereShape(float radius)
+        public ShapeHandle AddSphereShape(SphereData data)
         {
-            var packed = AddSphereShape(Id, radius);
+            var packed = AddSphereShape(Id, data);
+            return new ShapeHandle()
+            {
+                Packed = packed
+            };
+        }
+        
+        public ShapeHandle AddCapsuleShape(CapsuleData data)
+        {
+            var packed = AddCapsuleShape(Id, data);
             return new ShapeHandle()
             {
                 Packed = packed
@@ -109,6 +122,31 @@ namespace BepuNativeAOTWrapper
         public void Step(float dt)
         {
             Step(Id, dt);
+        }
+        
+        public void Sleep()
+        {
+            Sleep(Id);
+        }
+    
+        public void PredictBoundingBoxes(float dt)
+        {
+            PredictBoundingBoxes(Id,dt);
+        }
+    
+        public void CollisionDetection(float dt)
+        {
+            CollisionDetection(Id, dt);
+        }
+    
+        public void Solve(float dt)
+        {
+            Solve(Id, dt);
+        }
+    
+        public void IncrementallyOptimizeDataStructures()
+        {
+            IncrementallyOptimizeDataStructures(Id);
         }
 
         public void Dispose()
