@@ -15,15 +15,15 @@ namespace BepuNativeAOTWrapper
         [DllImport(DllName)]
         private static extern void Step(int simId, float dt);
         [DllImport(DllName)]
-        private static extern void Sleep(int simId);
+        private static extern void StepSleep(int simId);
         [DllImport(DllName)]
-        private static extern void PredictBoundingBoxes(int simId, float dt);
+        private static extern void StepPredictBoundingBoxes(int simId, float dt);
         [DllImport(DllName)]
-        private static extern void CollisionDetection(int simId, float dt);
+        private static extern void StepCollisionDetection(int simId, float dt);
         [DllImport(DllName)]
-        private static extern void Solve(int simId, float dt);
+        private static extern void StepSolve(int simId, float dt);
         [DllImport(DllName)]
-        private static extern void IncrementallyOptimizeDataStructures(int simId);
+        private static extern void StepIncrementallyOptimizeDataStructures(int simId);
         [DllImport(DllName)]
         private static extern uint AddBoxShape(int simId, BoxData data);
         [DllImport(DllName)]

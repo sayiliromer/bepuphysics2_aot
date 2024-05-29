@@ -183,36 +183,36 @@ public static class BepuApi
         _instances[simId].Simulation.Timestep(dt,_dispatcher);
     }
     
-    [UnmanagedCallersOnly(EntryPoint = "Sleep")]
-    public static void Sleep(int simId)
+    [UnmanagedCallersOnly(EntryPoint = "StepSleep")]
+    public static void StepSleep(int simId)
     {
         var simulation = _instances[simId].Simulation;
         simulation.Sleep(_dispatcher);
     }
     
-    [UnmanagedCallersOnly(EntryPoint = "PredictBoundingBoxes")]
-    public static void PredictBoundingBoxes(int simId, float dt)
+    [UnmanagedCallersOnly(EntryPoint = "StepPredictBoundingBoxes")]
+    public static void StepPredictBoundingBoxes(int simId, float dt)
     {
         var simulation = _instances[simId].Simulation;
         simulation.PredictBoundingBoxes(dt, _dispatcher);
     }
     
-    [UnmanagedCallersOnly(EntryPoint = "CollisionDetection")]
-    public static void CollisionDetection(int simId, float dt)
+    [UnmanagedCallersOnly(EntryPoint = "StepCollisionDetection")]
+    public static void StepCollisionDetection(int simId, float dt)
     {
         var simulation = _instances[simId].Simulation;
         simulation.CollisionDetection(dt, _dispatcher);
     }
     
-    [UnmanagedCallersOnly(EntryPoint = "Solve")]
-    public static void Solve(int simId, float dt)
+    [UnmanagedCallersOnly(EntryPoint = "StepSolve")]
+    public static void StepSolve(int simId, float dt)
     {
         var simulation = _instances[simId].Simulation;
         simulation.Solve(dt, _dispatcher);
     }
     
-    [UnmanagedCallersOnly(EntryPoint = "IncrementallyOptimizeDataStructures")]
-    public static void IncrementallyOptimizeDataStructures(int simId)
+    [UnmanagedCallersOnly(EntryPoint = "StepIncrementallyOptimizeDataStructures")]
+    public static void StepIncrementallyOptimizeDataStructures(int simId)
     {
         var simulation = _instances[simId].Simulation;
         simulation.IncrementallyOptimizeDataStructures(_dispatcher);

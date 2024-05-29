@@ -8,6 +8,7 @@ public struct SimInstance
     public Simulation Simulation;
     public BufferPool BufferPool;
     public TransformExtractor TransformExtractor;
+    public StateSynchronizer StateSynchronizer;
 
     public SimInstance(Simulation simulation, BufferPool bufferPool)
     {

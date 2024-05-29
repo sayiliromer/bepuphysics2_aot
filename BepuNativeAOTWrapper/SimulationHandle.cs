@@ -119,34 +119,43 @@ namespace BepuNativeAOTWrapper
             };
         }
 
+        /// <summary>
+        /// This function sequentially calls following functions;
+        /// <see cref="StepSleep"/>
+        /// <see cref="StepPredictBoundingBoxes"/>
+        /// <see cref="StepCollisionDetection"/>
+        /// <see cref="StepSolve"/>
+        /// <see cref="StepIncrementallyOptimizeDataStructures"/>
+        /// </summary>
+        /// <param name="dt"></param>
         public void Step(float dt)
         {
             Step(Id, dt);
         }
         
-        public void Sleep()
+        public void StepSleep()
         {
-            Sleep(Id);
+            StepSleep(Id);
         }
     
-        public void PredictBoundingBoxes(float dt)
+        public void StepPredictBoundingBoxes(float dt)
         {
-            PredictBoundingBoxes(Id,dt);
+            StepPredictBoundingBoxes(Id,dt);
         }
     
-        public void CollisionDetection(float dt)
+        public void StepCollisionDetection(float dt)
         {
-            CollisionDetection(Id, dt);
+            StepCollisionDetection(Id, dt);
         }
     
-        public void Solve(float dt)
+        public void StepSolve(float dt)
         {
-            Solve(Id, dt);
+            StepSolve(Id, dt);
         }
     
-        public void IncrementallyOptimizeDataStructures()
+        public void StepIncrementallyOptimizeDataStructures()
         {
-            IncrementallyOptimizeDataStructures(Id);
+            StepIncrementallyOptimizeDataStructures(Id);
         }
 
         public void Dispose()

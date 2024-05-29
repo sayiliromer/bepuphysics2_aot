@@ -4,10 +4,20 @@
         <TargetFramework>netstandard2.1</TargetFramework>
         <Nullable>disable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <!-- AOT Project properties -->
+        <NativeAOTProjectPath>..\BepuNativeAOT</NativeAOTProjectPath>
+        <NativeAOTOutputPath>$(NativeAOTProjectPath)\bin\Release\net8.0\win-x64\publish</NativeAOTOutputPath>
+        <NativeAOTOutputFile>$(NativeAOTOutputPath)\BepuNativeAOT.dll</NativeAOTOutputFile>
     </PropertyGroup>
-
+    <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+        <!-- Build NativeAOT project -->
+        <Exec Command="dotnet publish $(NativeAOTProjectPath) -c Release -r win-x64" />
+    </Target>
     <ItemGroup>
       <ProjectReference Include="..\BepuNativeAOTShared\BepuNativeAOTShared.csproj" />
     </ItemGroup>
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Copy SourceFiles="$(NativeAOTOutputFile)" DestinationFolder="$(OutDir)" />
+    </Target>
 
 </Project>
