@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using BepuNativeAOTShared;
 using BepuPhysics;
 using BepuPhysics.Collidables;
+using BepuPhysics.CollisionDetection;
 using BepuPhysics.Constraints;
 using BepuUtilities;
 using BepuUtilities.Memory;
@@ -180,7 +181,15 @@ public static class BepuApi
     [UnmanagedCallersOnly(EntryPoint = "Step")]
     public static void Step(int simId, float dt)
     {
-        _instances[simId].Simulation.Timestep(dt,_dispatcher);
+        var sim = _instances[simId].Simulation;
+        sim.Sleep(_dispatcher);
+        sim.PredictBoundingBoxes(dt,_dispatcher);
+        var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
+        narrowPhase.Callbacks.OnPreCollisionDetection(_dispatcher);
+        sim.CollisionDetection(dt,_dispatcher);
+        sim.Solve(dt,_dispatcher);
+        sim.IncrementallyOptimizeDataStructures(_dispatcher);
+        //_instances[simId].Simulation.Timestep(dt,_dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepSleep")]
@@ -262,5 +271,27 @@ public static class BepuApi
         ref var memoryLocation = ref bodies.HandleToLocation[bodyId];
         ref var rigid = ref bodies.Sets[memoryLocation.SetIndex].DynamicsState[memoryLocation.Index].Motion.Velocity;
         return (IntPtr)Unsafe.AsPointer(ref rigid);
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "SetBodyCollisionTracking")]
+    public static void SetBodyCollisionTracking(int simId, int bodyId, bool track)
+    {
+        var sim = _instances[simId];
+        var memoryPosition = sim.Simulation.Bodies.HandleToLocation[bodyId];
+        ref var collidable = ref sim.Simulation.Bodies.Sets[memoryPosition.SetIndex].Collidables[memoryPosition.Index];
+        ref var collidableReference = ref sim.Simulation.BroadPhase.ActiveLeaves[collidable.BroadPhaseIndex];
+        collidableReference.TrackCollision = track;
+
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "SetBodyTriggerTracking")]
+    public static void SetBodyTriggerTracking(int simId, int bodyId, bool track)
+    {
+        var sim = _instances[simId];
+        var memoryPosition = sim.Simulation.Bodies.HandleToLocation[bodyId];
+        ref var collidable = ref sim.Simulation.Bodies.Sets[memoryPosition.SetIndex].Collidables[memoryPosition.Index];
+        ref var collidableReference = ref sim.Simulation.BroadPhase.ActiveLeaves[collidable.BroadPhaseIndex];
+        collidableReference.TrackCollision = track;
+
     }
 }

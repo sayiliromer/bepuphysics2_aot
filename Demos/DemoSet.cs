@@ -8,6 +8,7 @@ using Demos.Demos.Sponsors;
 using Demos.Demos.Tanks;
 using System;
 using System.Collections.Generic;
+using Demos.SpecializedTests;
 
 namespace Demos;
 
@@ -43,6 +44,9 @@ public class DemoSet
 
     public DemoSet()
     {
+        AddOption<CollisionTrackingDemoLarge>();
+        AddOption<SittingDemo>();
+        AddOption<CharacterTestDemo>();
         AddOption<CarDemo>();
         AddOption<TankDemo>();
         AddOption<CharacterDemo>();

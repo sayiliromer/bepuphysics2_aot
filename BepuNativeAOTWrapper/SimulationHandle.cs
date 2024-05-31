@@ -73,6 +73,11 @@ namespace BepuNativeAOTWrapper
             SetBodyRotation(Id,bodyId, position);
         }
 
+        public void TrackCollisions(int bodyId)
+        {
+            
+        }
+
         public void ExtractPositions()
         {
             ExtractPositions(Id);

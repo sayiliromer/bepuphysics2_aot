@@ -46,6 +46,46 @@ namespace BepuPhysics.Collidables
         }
 
         /// <summary>
+        /// Helper flag for tracking collisions during <seealso cref="CollisionDetection.INarrowPhaseCallbacks"/>  
+        /// </summary>
+        public bool TrackCollision
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (Packed & 0xDFFFFFFF) != 0; }
+            set
+            {
+                if (value)
+                {
+                    Packed |= 0x20000000;
+                }
+                else
+                {
+                    Packed &= 0xDFFFFFFF;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// If true, this collidable will behave as Detector during <seealso cref="CollisionDetection.INarrowPhaseCallbacks"/>  
+        /// </summary>
+        public bool IsTrigger
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get { return (Packed & 0xEFFFFFFF) != 0; }
+            set
+            {
+                if (value)
+                {
+                    Packed |= 0x10000000;
+                }
+                else
+                {
+                    Packed &= 0xEFFFFFFF;
+                }
+            }
+        }
+
+        /// <summary>
         /// Gets the body handle of the owner of the collidable referred to by this instance.
         /// </summary>
         public BodyHandle BodyHandle
@@ -80,7 +120,7 @@ namespace BepuPhysics.Collidables
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return (int)(Packed & 0x3FFFFFFF);
+                return (int)(Packed & 0x0FFFFFFF);
             }
         }
 
@@ -94,7 +134,7 @@ namespace BepuPhysics.Collidables
         internal CollidableReference(CollidableMobility mobility, int handle)
         {
             Debug.Assert((int)mobility >= 0 && (int)mobility <= 2, "Hey you, that mobility type doesn't exist. Or we changed something and this needs to be updated.");
-            Debug.Assert(handle >= 0 && handle < 1 << 30, "Do you actually have more than 2^30 collidables? That seems unlikely.");
+            Debug.Assert(handle >= 0 && handle < 1 << 28, "Do you actually have more than 2^28 collidables? That seems unlikely.");
             Packed = ((uint)mobility << 30) | (uint)handle;
         }
 
