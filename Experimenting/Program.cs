@@ -1,11 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
-
-using System.Numerics;
 using BenchmarkDotNet.Attributes;
-using BepuNativeAOTShared;
-using BepuNativeAOTWrapper;
 using BepuUtilities.Collections;
-using BepuUtilities.Memory;
+using BepuUtilities.Memory;using Experimenting;
 
 // var coll = new Collision();
 // coll.Contact1.FeatureId = 5;
@@ -14,21 +10,23 @@ using BepuUtilities.Memory;
 // Console.WriteLine(coll.GetFeatureId(1) == 5);
 // Console.WriteLine(coll.GetFeatureId(3) == 2);
 
-BepuBootstrap.Init();
-
-var sim = SimulationHandle.Create();
-var box = new BoxData(1, 1, 1);
-var inertia = box.ComputeInertia(1);
-var boxId = sim.AddBoxShape(box);
-var bodyId = sim.AddBody(new Vector3(0,5,0), Vector3.Zero, inertia, boxId, 0.01f);
-var staticId = sim.AddStatic(new Vector3(0, -0.5f, 0), boxId);
-sim.SetBodyCollisionTracking(bodyId.Index, true);
-for (int i = 0; i < 1000; i++)
-{
-    sim.Step(0.01f);
-}
-Console.WriteLine("Completed sim");
-BepuBootstrap.Dispose();
+var example = new Example();
+example.DoTesting();
+// BepuBootstrap.Init();
+//
+// var sim = SimulationHandle.Create();
+// var box = new BoxData(1, 1, 1);
+// var inertia = box.ComputeInertia(1);
+// var boxId = sim.AddBoxShape(box);
+// var bodyId = sim.AddBody(new Vector3(0,5,0), Vector3.Zero, inertia, boxId, 0.01f);
+// var staticId = sim.AddStatic(new Vector3(0, -0.5f, 0), boxId);
+// sim.SetBodyCollisionTracking(bodyId.Index, true);
+// for (int i = 0; i < 1000; i++)
+// {
+//     sim.Step(0.01f);
+// }
+// Console.WriteLine("Completed sim");
+// BepuBootstrap.Dispose();
 
 // var add = new BenchAdd();
 //

@@ -33,6 +33,7 @@
     <ProjectReference Include="../BepuUtilities/BepuUtilities.csproj" />
     <ProjectReference Include="../DemoContentLoader/DemoContentLoader.csproj" />
     <ProjectReference Include="../DemoRenderer.GL/DemoRenderer.csproj" />
+    <ProjectReference Include="..\BepuNativeAOT\BepuNativeAOT.csproj" />
   </ItemGroup>
 
   <ItemGroup>

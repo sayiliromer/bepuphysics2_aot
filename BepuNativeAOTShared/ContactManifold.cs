@@ -29,6 +29,13 @@ namespace BepuNativeAOTShared
         public CollidableIndex B;
         public ContactManifold Contacts;
     }
+
+    public struct LivingContact
+    {
+        public bool IsAlive;
+        public bool IsNew;
+        public ContactManifold Contacts;
+    }
     
     [StructLayout(LayoutKind.Explicit, Size = 32)]
     public struct Contact

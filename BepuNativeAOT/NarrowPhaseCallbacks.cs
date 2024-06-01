@@ -34,11 +34,17 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         }
     }
     
-    public void OnPreCollisionDetection(ThreadDispatcher dispatcher, BufferPool pool)
+    public void OnPreCollisionDetection(Simulation simulation,ThreadDispatcher dispatcher, BufferPool pool)
     {
         CollisionTracker.ThreadDispatcher = dispatcher;
         CollisionTracker.Pool = pool;
+        CollisionTracker.Simulation = simulation;
         CollisionTracker.Prepare();
+    }
+
+    public void OnAfterCollisionDetection(ThreadDispatcher dispatcher, BufferPool instanceBufferPool)
+    {
+        CollisionTracker.Collect();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

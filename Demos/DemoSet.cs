@@ -44,6 +44,7 @@ public class DemoSet
 
     public DemoSet()
     {
+        AddOption<CollisionTrackingOther>();
         AddOption<CollisionTrackingDemoLarge>();
         AddOption<SittingDemo>();
         AddOption<CharacterTestDemo>();

@@ -181,8 +181,9 @@ public static class BepuApi
         sim.Sleep(dispatcher);
         sim.PredictBoundingBoxes(dt,dispatcher);
         var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
-        narrowPhase.Callbacks.OnPreCollisionDetection(dispatcher,instance.BufferPool);
+        narrowPhase.Callbacks.OnPreCollisionDetection(sim,dispatcher,instance.BufferPool);
         sim.CollisionDetection(dt,dispatcher);
+        narrowPhase.Callbacks.OnAfterCollisionDetection(dispatcher,instance.BufferPool);
         sim.Solve(dt,dispatcher);
         sim.IncrementallyOptimizeDataStructures(dispatcher);
     }
