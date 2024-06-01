@@ -97,8 +97,6 @@ public class ColosseumDemo : Demo
 
     BodyDescription bulletDescription;
     BodyDescription shootiePatootieDescription;
-    private float _fixedDt = 0.01f;
-    private float _fixedTimer;
     public override void Update(Window window, Camera camera, Input input, float dt)
     {
         if (input != null)
@@ -115,14 +113,6 @@ public class ColosseumDemo : Demo
                 shootiePatootieDescription.Velocity.Linear = camera.GetRayDirection(input.MouseLocked, window.GetNormalizedMousePosition(input.MousePosition)) * 100;
                 Simulation.Bodies.Add(shootiePatootieDescription);
             }
-        }
-
-        _fixedTimer += dt;
-        var catchUp = 10;
-        while (_fixedTimer >= _fixedDt && catchUp > 1)
-        {
-            _fixedTimer -= _fixedDt;
-            catchUp--;
         }
         base.Update(window, camera, input, dt);
     }

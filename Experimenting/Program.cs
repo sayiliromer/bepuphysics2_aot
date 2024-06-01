@@ -1,36 +1,59 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Numerics;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Running;
+using BepuNativeAOTShared;
+using BepuNativeAOTWrapper;
 using BepuUtilities.Collections;
 using BepuUtilities.Memory;
 
-var add = new BenchAdd();
+// var coll = new Collision();
+// coll.Contact1.FeatureId = 5;
+// coll.Contact3.FeatureId = 2;
+//
+// Console.WriteLine(coll.GetFeatureId(1) == 5);
+// Console.WriteLine(coll.GetFeatureId(3) == 2);
 
-add.Setup();
-add.AddDict();
-add.AddQuickDict();
-add.Cleanup();
-add.Setup();
-add.AddDict();
-add.AddQuickDict();
-add.Cleanup();
-add.Setup();
-add.AddDict();
-add.AddQuickDict();
-add.Cleanup();
+BepuBootstrap.Init();
 
-add.Setup();
-var sw = Stopwatch.StartNew();
-add.AddDict();
-Console.WriteLine(sw.Elapsed.TotalMilliseconds);
-sw.Restart();
-add.AddQuickDict();
-Console.WriteLine(sw.Elapsed.TotalMilliseconds);
-//BenchmarkRunner.Run<BenchAdd>();
-//BenchmarkRunner.Run<BenchTryGet>();
+var sim = SimulationHandle.Create();
+var box = new BoxData(1, 1, 1);
+var inertia = box.ComputeInertia(1);
+var boxId = sim.AddBoxShape(box);
+var bodyId = sim.AddBody(new Vector3(0,5,0), Vector3.Zero, inertia, boxId, 0.01f);
+var staticId = sim.AddStatic(new Vector3(0, -0.5f, 0), boxId);
+sim.SetBodyCollisionTracking(bodyId.Index, true);
+for (int i = 0; i < 1000; i++)
+{
+    sim.Step(0.01f);
+}
+Console.WriteLine("Completed sim");
+BepuBootstrap.Dispose();
+
+// var add = new BenchAdd();
+//
+// add.Setup();
+// add.AddDict();
+// add.AddQuickDict();
+// add.Cleanup();
+// add.Setup();
+// add.AddDict();
+// add.AddQuickDict();
+// add.Cleanup();
+// add.Setup();
+// add.AddDict();
+// add.AddQuickDict();
+// add.Cleanup();
+//
+// add.Setup();
+// var sw = Stopwatch.StartNew();
+// add.AddDict();
+// Console.WriteLine(sw.Elapsed.TotalMilliseconds);
+// sw.Restart();
+// add.AddQuickDict();
+// Console.WriteLine(sw.Elapsed.TotalMilliseconds);
+// //BenchmarkRunner.Run<BenchAdd>();
+// //BenchmarkRunner.Run<BenchTryGet>();
 
 public struct IntComparer : IEqualityComparerRef<int>
 {

@@ -1,116 +1,14 @@
-using System;
-using System.Numerics;
 using System.Runtime.CompilerServices;
+using BepuNativeAOTShared;
 using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.CollisionDetection;
 using BepuPhysics.Constraints;
 using BepuUtilities;
-using BepuUtilities.Collections;
 using BepuUtilities.Memory;
 
 namespace BepuNative;
 
-public struct ContactSource : IEqualityComparerRef<ContactSource>, IEquatable<ContactSource>
-{
-    /// <summary>
-    /// Collidable associated with this listener.
-    /// </summary>
-    public CollidableReference Collidable;
-    /// <summary>
-    /// Child index within the collidable associated with this listener, if any. -1 if the listener is associated with the entire collidable.
-    /// </summary>
-    public int ChildIndex;
-
-    public ContactSource(CollidableReference collidable, int childIndex)
-    {
-        Collidable = collidable;
-        ChildIndex = childIndex;
-    }
-
-    public bool Equals(ref ContactSource a, ref ContactSource b) => a.Collidable == b.Collidable && a.ChildIndex == b.ChildIndex;
-    public int Hash(ref ContactSource item) => (int)(item.Collidable.Packed ^ uint.RotateLeft((uint)item.ChildIndex, 16));
-    public bool Equals(ContactSource other) => Equals(ref this, ref other);
-    public override bool Equals(object obj) => obj is ContactSource source && Equals(source);
-    public override int GetHashCode() => Hash(ref this);
-    public static bool operator ==(ContactSource left, ContactSource right) => left.Equals(right);
-    public static bool operator !=(ContactSource left, ContactSource right) => !(left == right);
-
-    public static implicit operator ContactSource(CollidableReference collidable) => new() { Collidable = collidable, ChildIndex = -1 };
-}
-
-public struct WorkerPairContacts
-{
-    public ContactSource Self;
-    public ContactSource Other;
-    public ConvexContactManifold Contacts;
-}
-
-public struct CollisionTracker
-{
-    public Buffer<QuickList<WorkerPairContacts>> WorkerPairs;
-    public IThreadDispatcher ThreadDispatcher;
-
-    public void Report<TManifold, TRevertStatus>(int workerIndex, ContactSource a, ContactSource b, ref TManifold manifold)
-        where TManifold : unmanaged, IContactManifold<TManifold> where TRevertStatus : unmanaged, IReverseStatus
-    {
-        if (!a.Collidable.TrackCollision) return;
-        ref var contactPair = ref WorkerPairs[workerIndex].Allocate(ThreadDispatcher.WorkerPools[workerIndex]);
-        contactPair.Self = a;
-        contactPair.Other = b;
-        if (typeof(TManifold) == typeof(ConvexContactManifold)) //Compile time constant
-        {
-            contactPair.Contacts = Unsafe.As<TManifold, ConvexContactManifold>(ref manifold);
-            if (typeof(TRevertStatus) == typeof(Reversed)) //Another compile time constant
-            {
-                //Reverse normals and offset
-                contactPair.Contacts.Normal = -contactPair.Contacts.Normal;
-                contactPair.Contacts.OffsetB = -contactPair.Contacts.OffsetB;
-
-                for (int i = 0; i < manifold.Count; i++)
-                {
-                    ref var targetContact = ref Unsafe.Add(ref contactPair.Contacts.Contact0, i);
-                    targetContact.Offset += contactPair.Contacts.OffsetB;
-                }
-            }
-        }
-        else
-        {
-            ref var ncManifold = ref Unsafe.As<TManifold, NonconvexContactManifold>(ref manifold);
-            
-            for (int i = manifold.Count - 1; i >= 0; --i)
-            {
-                ref var targetContact = ref Unsafe.Add(ref contactPair.Contacts.Contact0, i);
-                ncManifold.GetContact(i, out targetContact.Offset, out contactPair.Contacts.Normal, out targetContact.Depth, out targetContact.FeatureId);
-            }
-            
-            contactPair.Contacts.Count = manifold.Count;
-            if (typeof(TRevertStatus) == typeof(Reversed)) //Another compile time constant
-            {
-                //Reverse normals and offset
-                contactPair.Contacts.OffsetB = -ncManifold.OffsetB;
-                contactPair.Contacts.Normal = -contactPair.Contacts.Normal;
-                for (int i = manifold.Count - 1; i >= 0; --i)
-                {
-                    ref var targetContact = ref Unsafe.Add(ref contactPair.Contacts.Contact0, i);
-                    targetContact.Offset += contactPair.Contacts.OffsetB;
-                }
-            }
-            else
-            {
-                contactPair.Contacts.OffsetB = ncManifold.OffsetB;
-            }
-        }
-
-    }
-
-    public interface IReverseStatus
-    {
-        
-    }
-    public struct Reversed : IReverseStatus { }
-    public struct NonReversed : IReverseStatus { }
-}
 public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
 {
     public SpringSettings ContactSpringiness;
@@ -136,9 +34,11 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         }
     }
     
-    public void OnPreCollisionDetection(ThreadDispatcher dispatcher)
+    public void OnPreCollisionDetection(ThreadDispatcher dispatcher, BufferPool pool)
     {
         CollisionTracker.ThreadDispatcher = dispatcher;
+        CollisionTracker.Pool = pool;
+        CollisionTracker.Prepare();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,9 +61,10 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
     public bool ConfigureContactManifold<TManifold>(int workerIndex, CollidablePair pair, ref TManifold manifold, out PairMaterialProperties pairMaterial)
         where TManifold : unmanaged, IContactManifold<TManifold>
     {
-        CollisionTracker.Report<TManifold,CollisionTracker.NonReversed>(workerIndex, pair.A, pair.B, ref manifold);
-        CollisionTracker.Report<TManifold,CollisionTracker.Reversed>(workerIndex, pair.B, pair.A, ref manifold);
-        
+        var a = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.A));
+        var b = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.B));
+        CollisionTracker.Report<TManifold,CollisionTracker.NonReversed>(workerIndex, a, b, ref manifold);
+        CollisionTracker.Report<TManifold,CollisionTracker.Reversed>(workerIndex, b, a, ref manifold);
         pairMaterial.FrictionCoefficient = FrictionCoefficient;
         pairMaterial.MaximumRecoveryVelocity = MaximumRecoveryVelocity;
         pairMaterial.SpringSettings = ContactSpringiness;
@@ -173,8 +74,8 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool ConfigureContactManifold(int workerIndex, CollidablePair pair, int childIndexA, int childIndexB, ref ConvexContactManifold manifold)
     {
-        var a = new ContactSource(pair.A, childIndexA);
-        var b = new ContactSource(pair.B, childIndexB);
+        var a = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.A), childIndexA);
+        var b = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.B), childIndexB);
         CollisionTracker.Report<ConvexContactManifold,CollisionTracker.NonReversed>(workerIndex, a, b, ref manifold);
         CollisionTracker.Report<ConvexContactManifold,CollisionTracker.Reversed>(workerIndex, b, a, ref manifold);
         return true;

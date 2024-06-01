@@ -16,8 +16,14 @@
     <ItemGroup>
       <ProjectReference Include="..\BepuNativeAOTShared\BepuNativeAOTShared.csproj" />
     </ItemGroup>
+    <ItemGroup>
+        <None Update="BepuNativeAOT.dll">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <Copy SourceFiles="$(NativeAOTOutputFile)" DestinationFolder="$(OutDir)" />
+        <Copy SourceFiles="$(NativeAOTOutputFile)" DestinationFolder="$(ProjectDir)" />
     </Target>
 
 </Project>

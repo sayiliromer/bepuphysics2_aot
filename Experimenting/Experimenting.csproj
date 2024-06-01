@@ -12,6 +12,8 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\BepuNativeAOTShared\BepuNativeAOTShared.csproj" />
+      <ProjectReference Include="..\BepuNativeAOTWrapper\BepuNativeAOTWrapper.csproj" />
       <ProjectReference Include="..\BepuUtilities\BepuUtilities.csproj" />
     </ItemGroup>
 

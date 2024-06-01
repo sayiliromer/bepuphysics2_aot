@@ -8,5 +8,19 @@ namespace BepuNativeAOTShared
     {
         public Quaternion Rotation;
         public Vector3 Position;
+
+        public static PhysicsTransform FromPosition(Vector3 position)
+        {
+            return new PhysicsTransform()
+            {
+                Position = position,
+                Rotation = Quaternion.Identity
+            };
+        }
+
+        public static implicit operator PhysicsTransform(Vector3 v3)
+        {
+            return FromPosition(v3);
+        }
     }
 }

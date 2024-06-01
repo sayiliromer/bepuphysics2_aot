@@ -15,8 +15,7 @@ namespace BepuNative;
 
 public static class BepuApi
 {
-    private static ThreadDispatcher _dispatcher;
-    private static BufferPool _bufferPool;
+    public static int GetThreadCount() => int.Max(1, Environment.ProcessorCount > 4 ? Environment.ProcessorCount - 2 : Environment.ProcessorCount - 1);
     private static List<SimInstance> _instances;
     private static Queue<int> _emptyIndexes;
 
@@ -25,9 +24,6 @@ public static class BepuApi
     {
         _instances = new List<SimInstance>();
         _emptyIndexes = new Queue<int>();
-        _bufferPool = new BufferPool();
-        var targetThreadCount = int.Max(1, Environment.ProcessorCount > 4 ? Environment.ProcessorCount - 2 : Environment.ProcessorCount - 1);
-        _dispatcher = new ThreadDispatcher(targetThreadCount);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Dispose")]
@@ -39,27 +35,25 @@ public static class BepuApi
         }
             
         _instances?.Clear();
-        _dispatcher?.Dispose();
         _emptyIndexes?.Clear();
-        _bufferPool?.Clear();
             
         _instances = null;
-        _dispatcher = null;
         _emptyIndexes = null;
-        _bufferPool = null;
     }
     
     [UnmanagedCallersOnly(EntryPoint = "CreateSimulationInstance")]
     public static int CreateSimulationInstance(SimulationDef def)
     {
+        var simulationPool = new BufferPool();
+        var threadDispatcher = new ThreadDispatcher(GetThreadCount());
         var sim = Simulation
             .Create(
-                _bufferPool,
+                simulationPool,
                 new NarrowPhaseCallbacks(new SpringSettings(def.SpringFrequency, def.SpringDamping)),
                 new PoseIntegratorCallbacks(def.Gravity, def.GlobalLinearDamping, def.GlobalAngularDamping),
                 new SolveDescription(def.VelocityIteration, def.SubStepping));
         
-        var instance = new SimInstance(sim, _bufferPool);
+        var instance = new SimInstance(sim, simulationPool,threadDispatcher);
 
         int index;
         if (_emptyIndexes.Count != 0)
@@ -181,50 +175,56 @@ public static class BepuApi
     [UnmanagedCallersOnly(EntryPoint = "Step")]
     public static void Step(int simId, float dt)
     {
-        var sim = _instances[simId].Simulation;
-        sim.Sleep(_dispatcher);
-        sim.PredictBoundingBoxes(dt,_dispatcher);
+        var instance = _instances[simId];
+        var sim = instance.Simulation;
+        var dispatcher = instance.ThreadDispatcher;
+        sim.Sleep(dispatcher);
+        sim.PredictBoundingBoxes(dt,dispatcher);
         var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
-        narrowPhase.Callbacks.OnPreCollisionDetection(_dispatcher);
-        sim.CollisionDetection(dt,_dispatcher);
-        sim.Solve(dt,_dispatcher);
-        sim.IncrementallyOptimizeDataStructures(_dispatcher);
-        //_instances[simId].Simulation.Timestep(dt,_dispatcher);
+        narrowPhase.Callbacks.OnPreCollisionDetection(dispatcher,instance.BufferPool);
+        sim.CollisionDetection(dt,dispatcher);
+        sim.Solve(dt,dispatcher);
+        sim.IncrementallyOptimizeDataStructures(dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepSleep")]
     public static void StepSleep(int simId)
     {
-        var simulation = _instances[simId].Simulation;
-        simulation.Sleep(_dispatcher);
+        var instance = _instances[simId];
+        var simulation = instance.Simulation;
+        simulation.Sleep(instance.ThreadDispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepPredictBoundingBoxes")]
     public static void StepPredictBoundingBoxes(int simId, float dt)
     {
-        var simulation = _instances[simId].Simulation;
-        simulation.PredictBoundingBoxes(dt, _dispatcher);
+        var instance = _instances[simId];
+        var simulation = instance.Simulation;
+        simulation.PredictBoundingBoxes(dt, instance.ThreadDispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepCollisionDetection")]
     public static void StepCollisionDetection(int simId, float dt)
     {
-        var simulation = _instances[simId].Simulation;
-        simulation.CollisionDetection(dt, _dispatcher);
+        var instance = _instances[simId];
+        var simulation = instance.Simulation;
+        simulation.CollisionDetection(dt, instance.ThreadDispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepSolve")]
     public static void StepSolve(int simId, float dt)
     {
-        var simulation = _instances[simId].Simulation;
-        simulation.Solve(dt, _dispatcher);
+        var instance = _instances[simId];
+        var simulation = instance.Simulation;
+        simulation.Solve(dt, instance.ThreadDispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepIncrementallyOptimizeDataStructures")]
     public static void StepIncrementallyOptimizeDataStructures(int simId)
     {
-        var simulation = _instances[simId].Simulation;
-        simulation.IncrementallyOptimizeDataStructures(_dispatcher);
+        var instance = _instances[simId];
+        var simulation = instance.Simulation;
+        simulation.IncrementallyOptimizeDataStructures(instance.ThreadDispatcher);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "GetTransformPointer")]

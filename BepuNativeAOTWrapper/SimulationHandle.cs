@@ -73,11 +73,6 @@ namespace BepuNativeAOTWrapper
             SetBodyRotation(Id,bodyId, position);
         }
 
-        public void TrackCollisions(int bodyId)
-        {
-            
-        }
-
         public void ExtractPositions()
         {
             ExtractPositions(Id);
@@ -163,6 +158,16 @@ namespace BepuNativeAOTWrapper
             StepIncrementallyOptimizeDataStructures(Id);
         }
 
+        public void SetBodyCollisionTracking(int bodyId, bool track)
+        {
+            SetBodyCollisionTracking(Id, bodyId, track);
+        }
+    
+        public void SetBodyTriggerTracking(int bodyId, bool track)
+        {
+            SetBodyTriggerTracking(Id, bodyId, track);
+        }
+        
         public void Dispose()
         {
             DestroySimulation(Id);

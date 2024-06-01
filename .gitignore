@@ -208,3 +208,4 @@ ModelManifest.xml
 
 # JetBrains Rider
 .idea/
+BepuNativeAOTWrapper/BepuNativeAOT.dll
