@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using BepuNativeAOTShared;
 using BepuPhysics;
@@ -27,7 +28,7 @@ public struct TrackedCollisions
     public QuickDictionary<CollidableIndex, LivingContact, CollidableIndexComparer> Pairs;
 }
 
-public struct CollisionTracker
+public class CollisionTracker
 {
     public QuickDictionary<CollidableIndex, TrackedCollisions, CollidableIndexComparer> Collisions;
     public Buffer<QuickList<Collision>> WorkerPairs;
@@ -39,6 +40,7 @@ public struct CollisionTracker
     
     public void Prepare(ref SimInstance simInstance)
     {
+        var sw = Stopwatch.StartNew();
         _sim = simInstance.Simulation;
         _dispatcher = simInstance.Dispatcher;
         _properties = simInstance.CollidableProperty;
@@ -66,13 +68,13 @@ public struct CollisionTracker
             ref var tracked = ref Collisions.Values[i];
             for (int j = tracked.Pairs.Count - 1; j >= 0; j--)
             {
-                ref var p = ref tracked.Pairs.Values[j];
-                if (p.IsAlive)
+                ref var contact = ref tracked.Pairs.Values[j];
+                if (contact.IsAlive)
                 {
                     count++;
                     continue;
                 }
-                Console.WriteLine("Removed old collision");
+                //Console.WriteLine($"Removed old collision {tracked.Pairs.Keys[j].Collidable.RawHandleValue} in {Collisions.Keys[i].Collidable.RawHandleValue}");
                 tracked.Pairs.FastRemove(tracked.Pairs.Keys[j]);
             }
         }
@@ -82,15 +84,16 @@ public struct CollisionTracker
             Console.WriteLine($"Collision count: {count}");
             _lastCollisionCount = count;
         }
-        
+
         for (int i = Collisions.Count - 1; i >= 0; i--)
         {
-            var tracked = Collisions.Values[i];
+            ref var tracked = ref Collisions.Values[i];
             if (tracked.Pairs.Count == 0)
             {
-                Console.WriteLine("Tracked is empty removing");
+                var key = Collisions.Keys[i];
                 tracked.Pairs.Dispose(_pool);
-                Collisions.FastRemove(Collisions.Keys[i]);
+                var removed = Collisions.FastRemove(key);
+                //Console.WriteLine($"Tracked is empty removing {key.Collidable.RawHandleValue} {removed}");
             }
             else
             {
@@ -122,6 +125,7 @@ public struct CollisionTracker
                 }
             }
         }
+        //Console.WriteLine($"Prepare {sw.Elapsed.TotalMilliseconds}");
     }
 
     private static ref TrackedCollisions GetOrAdd(ref CollidableIndex key,
@@ -149,13 +153,23 @@ public struct CollisionTracker
 
     public void Collect()
     {
+        var sw = Stopwatch.StartNew();
         for (int i = 0; i < WorkerPairs.Length; i++)
         {
-            var workerList = WorkerPairs[i];
+            ref var workerList = ref WorkerPairs[i];
             for (int j = 0; j < workerList.Count; j++)
             {
-                ref var collision = ref workerList[j];
-                ref var trackedCollisions = ref GetOrAdd(ref collision.A,ref Collisions, _pool);
+                var collision = workerList[j];
+                if (!Collisions.ContainsKey(ref collision.A))
+                {
+                    Collisions.Add(ref collision.A, new TrackedCollisions()
+                    {
+                        Pairs = new QuickDictionary<CollidableIndex, LivingContact, CollidableIndexComparer>(8,_pool)
+                    },_pool);
+                }
+
+                var index = Collisions.IndexOf(ref collision.A);
+                ref var trackedCollisions = ref Collisions.Values[index];
                 if (trackedCollisions.Pairs.GetTableIndices(ref collision.B, out int tableIndex, out int elementIndex))
                 {
                     //Already present!
@@ -165,7 +179,7 @@ public struct CollisionTracker
                 }
                 else
                 {
-                    //Console.WriteLine("Added new collision");
+                    //Console.WriteLine($"Added new collision {collision.B.Collidable.RawHandleValue} for {collision.A.Collidable.RawHandleValue}");
                     trackedCollisions.Pairs.Add(ref collision.B, new LivingContact()
                     {
                         Contacts = collision.Contacts,
@@ -174,12 +188,10 @@ public struct CollisionTracker
                     }, _pool);
                 }
             }
+            workerList.Clear();
         }
         
-        for (int i = 0; i < WorkerPairs.Length; i++)
-        {
-            WorkerPairs[i].Clear();
-        }
+        //Console.WriteLine($"Collect {sw.Elapsed.TotalMilliseconds}");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -188,6 +200,16 @@ public struct CollisionTracker
     {
         ref var flags = ref _properties.Get(ref a.Collidable);
         if (!flags.TrackCollisions) return;
+        bool hasDepth = false;
+        for (int i = 0; i < manifold.Count; i++)
+        {
+            if (manifold.GetDepth(i) > -0.0001f)
+            {
+                hasDepth = true;
+                break;
+            }
+        }
+        if(!hasDepth) return;
         ref var resultCollisionPair = ref WorkerPairs[workerIndex].Allocate(_dispatcher.WorkerPools[workerIndex]);
         resultCollisionPair.A = a;
         resultCollisionPair.B = b;

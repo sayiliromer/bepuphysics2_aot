@@ -68,7 +68,7 @@ public struct SimInstance
             Activity = new BodyActivityDescription(sleepThreshold)
         };
         var handle = Simulation.Bodies.Add(bd);
-        CollidableProperty.Allocate(handle);
+        CollidableProperty.Allocate(handle).Packed = 0;
         return handle.Value;
     }
     

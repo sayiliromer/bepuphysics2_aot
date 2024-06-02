@@ -6,7 +6,6 @@ using DemoContentLoader;
 using DemoRenderer;
 using BepuNative;
 using BepuNativeAOTShared;
-using BepuPhysics;
 using DemoUtilities;
 using OpenTK.Input;
 
@@ -29,15 +28,26 @@ public class CollisionTrackingOther : Demo
         var inertia = box.ComputeInertia(1);
         var boxId = _instance.AddBoxShape(box);
 
-        for (int i = 0; i < 200; i++)
+        var cellSize = 40;
+        var cellCount = 10;
+
+        for (int k = 0; k < cellCount; k++)
         {
-            for (int j = 0; j < 200; j++)
+            for (int l = 0; l < cellCount; l++)
             {
-                var bodyId = _instance.AddBody(new Vector3(i * 2, 5, j * 2), Vector3.Zero, inertia, boxId, 0.01f);
-                _instance.SetBodyCollisionTracking(bodyId, true);
-                _bodies.Add(bodyId);
+                for (int i = 0; i < cellSize; i++)
+                {
+                    for (int j = 0; j < cellSize; j++)
+                    {
+                        var bodyId = _instance.AddBody(new Vector3(i * 2 + k * cellSize * 4, 2, j * 2 + l * cellSize * 4), new Vector3(0, 0, 0), inertia, boxId,
+                            0.1f);
+                        _instance.SetBodyCollisionTracking(bodyId, true);
+                        _bodies.Add(bodyId);
+                    }
+                }
             }
         }
+
         _instance.AddStatic(new Vector3(0, -0.5f, 0), _instance.AddBoxShape(new BoxData(5000, 1, 5000)));
     }
 
@@ -52,7 +62,7 @@ public class CollisionTrackingOther : Demo
         _instance.Simulation.Profiler.Start(_instance.Simulation);
         _instance.Step(dt);
         _instance.Simulation.Profiler.End(_instance.Simulation);
-        if (input.IsDown(Key.Space))
+        if (input.IsDown(Key.Space) && !input.WasDown(Key.Space) && _bodies.Count > 0)
         {
             var index = _random.Next(_bodies.Count);
             var id = _bodies[index];
