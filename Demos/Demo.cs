@@ -94,7 +94,6 @@ public abstract class Demo : IDisposable
 
     protected virtual void OnDispose()
     {
-
     }
 
     bool disposed;

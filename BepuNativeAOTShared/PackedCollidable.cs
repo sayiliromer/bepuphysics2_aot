@@ -6,56 +6,20 @@ namespace BepuNativeAOTShared
 {
     public struct PackedCollidable
     {
+        /// <summary>
+        /// Bitpacked representation of the collidable reference.
+        /// </summary>
         public uint Packed;
-        
+
+        /// <summary>
+        /// Gets the mobility state of the owner of this collidable.
+        /// </summary>
         public Type Mobility
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (Type)(Packed >> 30);
+            get { return (Type)(Packed >> 30); }
         }
 
-        /// <summary>
-        /// Helper flag for tracking collisions during <seealso cref="INarrowPhaseCallbacks"/>  
-        /// </summary>
-        public bool TrackCollision
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (Packed & 0xDFFFFFFF) != 0;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                if (value)
-                {
-                    Packed |= 0x20000000;
-                }
-                else
-                {
-                    Packed &= 0xDFFFFFFF;
-                }
-            }
-        }
-        
-        /// <summary>
-        /// If true, this collidable will behave as Detector during <seealso cref="INarrowPhaseCallbacks"/>  
-        /// </summary>
-        public bool IsTrigger
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (Packed & 0xEFFFFFFF) != 0;
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set
-            {
-                if (value)
-                {
-                    Packed |= 0x10000000;
-                }
-                else
-                {
-                    Packed &= 0xEFFFFFFF;
-                }
-            }
-        }
-        
         /// <summary>
         /// Gets the body handle of the owner of the collidable referred to by this instance.
         /// </summary>
@@ -89,7 +53,10 @@ namespace BepuNativeAOTShared
         public int RawHandleValue
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (int)(Packed & 0x0FFFFFFF);
+            get
+            {
+                return (int)(Packed & 0x3FFFFFFF);
+            }
         }
         
         public enum Type
@@ -106,13 +73,6 @@ namespace BepuNativeAOTShared
             /// Marks the collidable as an independent immobile collidable.
             /// </summary>
             Static = 2
-        }
-        
-        [Flags]
-        public enum ListenFlags
-        {
-            TrackCollisions = 1,
-            Trigger = 2
         }
     }
 }

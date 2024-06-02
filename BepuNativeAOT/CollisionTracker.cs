@@ -31,24 +31,31 @@ public struct CollisionTracker
 {
     public QuickDictionary<CollidableIndex, TrackedCollisions, CollidableIndexComparer> Collisions;
     public Buffer<QuickList<Collision>> WorkerPairs;
-    public IThreadDispatcher ThreadDispatcher;
-    public BufferPool Pool;
-    public Simulation Simulation;
-
-    public void Prepare()
+    private Simulation _sim;
+    private IThreadDispatcher _dispatcher;
+    private CollidableProperty<CollidableFlags> _properties;
+    private BufferPool _pool;
+    private int _lastCollisionCount;
+    
+    public void Prepare(ref SimInstance simInstance)
     {
+        _sim = simInstance.Simulation;
+        _dispatcher = simInstance.Dispatcher;
+        _properties = simInstance.CollidableProperty;
+        _pool = simInstance.BufferPool;
+        
         if (!Collisions.Values.Allocated)
         {
-            Collisions = new QuickDictionary<CollidableIndex, TrackedCollisions, CollidableIndexComparer>(1024, Pool);
+            Collisions = new QuickDictionary<CollidableIndex, TrackedCollisions, CollidableIndexComparer>(1024, _pool);
         }
         
         if (!WorkerPairs.Allocated)
         {
-            WorkerPairs = new Buffer<QuickList<Collision>>(ThreadDispatcher.ThreadCount, Pool);
+            WorkerPairs = new Buffer<QuickList<Collision>>(_dispatcher.ThreadCount, _pool);
             
-            for (int i = 0; i < ThreadDispatcher.ThreadCount; i++)
+            for (int i = 0; i < _dispatcher.ThreadCount; i++)
             {
-                WorkerPairs[i] = new QuickList<Collision>(512, ThreadDispatcher.WorkerPools[i]);
+                WorkerPairs[i] = new QuickList<Collision>(512, _dispatcher.WorkerPools[i]);
             }
         }
         
@@ -69,7 +76,12 @@ public struct CollisionTracker
                 tracked.Pairs.FastRemove(tracked.Pairs.Keys[j]);
             }
         }
-        //Console.WriteLine($"Collision count: {count}");
+
+        if (_lastCollisionCount != count)
+        {
+            Console.WriteLine($"Collision count: {count}");
+            _lastCollisionCount = count;
+        }
         
         for (int i = Collisions.Count - 1; i >= 0; i--)
         {
@@ -77,13 +89,13 @@ public struct CollisionTracker
             if (tracked.Pairs.Count == 0)
             {
                 Console.WriteLine("Tracked is empty removing");
-                tracked.Pairs.Dispose(Pool);
+                tracked.Pairs.Dispose(_pool);
                 Collisions.FastRemove(Collisions.Keys[i]);
             }
             else
             {
                 var col = Collisions.Keys[i].Collidable;
-                if (col.Mobility != PackedCollidable.Type.Static && Simulation.Bodies[new BodyHandle(col.BodyHandle)].Awake)
+                if (col.Mobility != PackedCollidable.Type.Static && _sim.Bodies[new BodyHandle(col.BodyHandle)].Awake)
                 {
                     //Reset everything if body is awaken
                     for (int j = 0; j < tracked.Pairs.Count; j++)
@@ -99,7 +111,7 @@ public struct CollisionTracker
                     {
                         ref var p = ref tracked.Pairs.Values[j];
                         var other = tracked.Pairs.Keys[j];
-                        if (other.Collidable.Mobility != PackedCollidable.Type.Static && Simulation.Bodies[new BodyHandle(other.Collidable.BodyHandle)].Awake)
+                        if (other.Collidable.Mobility != PackedCollidable.Type.Static && _sim.Bodies[new BodyHandle(other.Collidable.BodyHandle)].Awake)
                         {
                             //An Awake body! reset alive status.
                             //If body is sleeping we won't be able to keep this contact alive otherwise.
@@ -142,8 +154,8 @@ public struct CollisionTracker
             var workerList = WorkerPairs[i];
             for (int j = 0; j < workerList.Count; j++)
             {
-                ref var collision = ref workerList[i];
-                ref var trackedCollisions = ref GetOrAdd(ref collision.A,ref Collisions, Pool);
+                ref var collision = ref workerList[j];
+                ref var trackedCollisions = ref GetOrAdd(ref collision.A,ref Collisions, _pool);
                 if (trackedCollisions.Pairs.GetTableIndices(ref collision.B, out int tableIndex, out int elementIndex))
                 {
                     //Already present!
@@ -153,13 +165,13 @@ public struct CollisionTracker
                 }
                 else
                 {
-                    Console.WriteLine("Added new collision");
+                    //Console.WriteLine("Added new collision");
                     trackedCollisions.Pairs.Add(ref collision.B, new LivingContact()
                     {
                         Contacts = collision.Contacts,
                         IsAlive = true,
                         IsNew = true
-                    }, Pool);
+                    }, _pool);
                 }
             }
         }
@@ -174,56 +186,52 @@ public struct CollisionTracker
     public void Report<TManifold, TRevertStatus>(int workerIndex, CollidableIndex a, CollidableIndex b, ref TManifold manifold)
         where TManifold : unmanaged, IContactManifold<TManifold> where TRevertStatus : unmanaged, IReverseStatus
     {
-        if (a.Collidable.Mobility != PackedCollidable.Type.Static)
+        ref var flags = ref _properties.Get(ref a.Collidable);
+        if (!flags.TrackCollisions) return;
+        ref var resultCollisionPair = ref WorkerPairs[workerIndex].Allocate(_dispatcher.WorkerPools[workerIndex]);
+        resultCollisionPair.A = a;
+        resultCollisionPair.B = b;
+        if (typeof(TManifold) == typeof(ConvexContactManifold)) //Compile time constant
         {
-            Console.WriteLine(a.Collidable.TrackCollision);
+            resultCollisionPair.Contacts = Unsafe.As<TManifold, ContactManifold>(ref manifold);
+            if (typeof(TRevertStatus) == typeof(Reversed)) //Another compile time constant
+            {
+                //Reverse normals and offset
+                resultCollisionPair.Contacts.OffsetB = -resultCollisionPair.Contacts.OffsetB;
+
+                for (int i = 0; i < manifold.Count; i++)
+                {
+                    ref var targetContact = ref Unsafe.Add(ref resultCollisionPair.Contacts.Contact0, i);
+                    targetContact.Offset += resultCollisionPair.Contacts.OffsetB;
+                    targetContact.Normal = -targetContact.Normal;
+                }
+            }
         }
-        if (!a.Collidable.TrackCollision) return;
-        ref var resultPair = ref WorkerPairs[workerIndex].Allocate(ThreadDispatcher.WorkerPools[workerIndex]);
-        resultPair.A = a;
-        resultPair.B = b;
-        if (typeof(TManifold) == typeof(NonconvexContactManifold)) //Compile time constant
+        else
         {
             ref var ncManifold = ref Unsafe.As<TManifold, NonconvexContactManifold>(ref manifold);
             for (int i = manifold.Count - 1; i >= 0; --i)
             {
-                ref var targetContact = ref Unsafe.Add(ref resultPair.Contacts.Contact0, i);
+                ref var targetContact = ref Unsafe.Add(ref resultCollisionPair.Contacts.Contact0, i);
                 ncManifold.GetContact(i, out targetContact.Offset, out targetContact.Normal, out targetContact.Depth, out targetContact.FeatureId);
             }
-            resultPair.Contacts.Count = manifold.Count;
+            resultCollisionPair.Contacts.Count = manifold.Count;
             if (typeof(TRevertStatus) == typeof(Reversed)) //Another compile time constant
             {
                 //Reverse normals and offset
-                resultPair.Contacts.OffsetB = -ncManifold.OffsetB;
+                resultCollisionPair.Contacts.OffsetB = -ncManifold.OffsetB;
                 for (int i = manifold.Count - 1; i >= 0; --i)
                 {
-                    ref var targetContact = ref Unsafe.Add(ref resultPair.Contacts.Contact0, i);
-                    targetContact.Offset += resultPair.Contacts.OffsetB;
+                    ref var targetContact = ref Unsafe.Add(ref resultCollisionPair.Contacts.Contact0, i);
+                    targetContact.Offset += resultCollisionPair.Contacts.OffsetB;
                     targetContact.Normal = -targetContact.Normal;
                 }
             }
             else
             {
-                resultPair.Contacts.OffsetB = ncManifold.OffsetB;
+                resultCollisionPair.Contacts.OffsetB = ncManifold.OffsetB;
             }
         }
-        else
-        {
-            resultPair.Contacts = Unsafe.As<TManifold, ContactManifold>(ref manifold);
-            if (typeof(TRevertStatus) == typeof(Reversed)) //Another compile time constant
-            {
-                //Reverse normals and offset
-                resultPair.Contacts.OffsetB = -resultPair.Contacts.OffsetB;
-
-                for (int i = 0; i < manifold.Count; i++)
-                {
-                    ref var targetContact = ref Unsafe.Add(ref resultPair.Contacts.Contact0, i);
-                    targetContact.Offset += resultPair.Contacts.OffsetB;
-                    targetContact.Normal = -targetContact.Normal;
-                }
-            }
-        }
-
     }
 
     public interface IReverseStatus { }

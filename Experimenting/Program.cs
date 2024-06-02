@@ -1,8 +1,10 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using BenchmarkDotNet.Attributes;
 using BepuUtilities.Collections;
-using BepuUtilities.Memory;using Experimenting;
+using BepuUtilities.Memory;
 
+
+return 0;
 // var coll = new Collision();
 // coll.Contact1.FeatureId = 5;
 // coll.Contact3.FeatureId = 2;
@@ -10,8 +12,8 @@ using BepuUtilities.Memory;using Experimenting;
 // Console.WriteLine(coll.GetFeatureId(1) == 5);
 // Console.WriteLine(coll.GetFeatureId(3) == 2);
 
-var example = new Example();
-example.DoTesting();
+// var example = new Example();
+// example.DoTesting();
 // BepuBootstrap.Init();
 //
 // var sim = SimulationHandle.Create();

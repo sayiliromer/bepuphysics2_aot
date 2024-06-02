@@ -450,18 +450,24 @@ public class CollisionTrackingDemoLarge : Demo
 
         var random = new Random(1);
         var count = 30000;
-        
-        
 
+
+        for (int i = 0; i < 200; i++)
+        {
+            for (int j = 0; j < 200; j++)
+            {
+                var sh = BodyDescription.CreateConvexDynamic(new Vector3(i * 2, 5, j * 2), 1, Simulation.Shapes,
+                    new Box(1, 1, 1));
+                sh.Activity.SleepThreshold = 0.01f;
+                var listenedBody1 = Simulation.Bodies.Add(sh);
+                collisionTracker.Track(Simulation.Bodies[listenedBody1].CollidableReference);
+            }
+        }
         //var listenedBody2 = Simulation.Bodies.Add(BodyDescription.CreateConvexDynamic(new Vector3(0.5f, 10, 0), 1, Simulation.Shapes, new Capsule(0.25f, 0.7f)));
         //collisionTracker.Track(Simulation.Bodies[listenedBody2].CollidableReference);
         for (int i = 0; i < count; i++)
         {
-            var sh = BodyDescription.CreateConvexDynamic(new Vector3((random.NextSingle() - 0.5f) * 5000, 5, (random.NextSingle() - 0.5f) * 5000), 1, Simulation.Shapes,
-                new Box(1, 2, 3));
-            sh.Activity.SleepThreshold = 0.01f;
-            var listenedBody1 = Simulation.Bodies.Add(sh);
-            collisionTracker.Track(Simulation.Bodies[listenedBody1].CollidableReference);
+            
         }
 
         Simulation.Statics.Add(new StaticDescription(new Vector3(0, -0.5f, 0), Simulation.Shapes.Add(new Box(5000, 1, 5000))));

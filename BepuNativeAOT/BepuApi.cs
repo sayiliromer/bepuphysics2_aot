@@ -44,17 +44,7 @@ public static class BepuApi
     [UnmanagedCallersOnly(EntryPoint = "CreateSimulationInstance")]
     public static int CreateSimulationInstance(SimulationDef def)
     {
-        var simulationPool = new BufferPool();
-        var threadDispatcher = new ThreadDispatcher(GetThreadCount());
-        var sim = Simulation
-            .Create(
-                simulationPool,
-                new NarrowPhaseCallbacks(new SpringSettings(def.SpringFrequency, def.SpringDamping)),
-                new PoseIntegratorCallbacks(def.Gravity, def.GlobalLinearDamping, def.GlobalAngularDamping),
-                new SolveDescription(def.VelocityIteration, def.SubStepping));
-        
-        var instance = new SimInstance(sim, simulationPool,threadDispatcher);
-
+        var instance = SimInstance.Create(def);
         int index;
         if (_emptyIndexes.Count != 0)
         {
@@ -66,7 +56,6 @@ public static class BepuApi
             index = _instances.Count;
             _instances.Add(instance);
         }
-
         return index;
     }
 
@@ -84,35 +73,25 @@ public static class BepuApi
     [UnmanagedCallersOnly(EntryPoint = "AddBody")]
     public static int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, uint packedShape, float sleepThreshold)
     {
-        var bd = new BodyDescription()
-        {
-            Pose = new RigidPose(transform.Position,transform.Rotation),
-            Velocity = velocity,
-            LocalInertia = Unsafe.As<BodyInertiaData, BodyInertia>(ref inertiaData),
-            Collidable = new TypedIndex() { Packed = packedShape },
-            Activity = new BodyActivityDescription(sleepThreshold)
-        };
-        return _instances[simId].Simulation.Bodies.Add(bd).Value;
+        return _instances[simId].AddBody(transform, velocity, inertiaData, packedShape, sleepThreshold);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddStatic")]
     public static int AddStatic(int simId, PhysicsTransform transform, uint packedShape)
     {
-        var sd = new StaticDescription()
-        {
-            Pose = new RigidPose(transform.Position,transform.Rotation),
-            Shape = new TypedIndex()
-            {
-                Packed = packedShape
-            },
-        };
-        return _instances[simId].Simulation.Statics.Add(sd).Value;
+        return _instances[simId].AddStatic(transform, packedShape);
     }
         
+    [UnmanagedCallersOnly(EntryPoint = "RemoveBody")]
+    public static void RemoveBody(int simId, int bodyId)
+    {
+        _instances[simId].RemoveBody(bodyId);
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "RemoveStatic")]
     public static void RemoveStatic(int simId, int staticId)
     {
-        _instances[simId].Simulation.Statics.Remove(new StaticHandle(staticId));
+        _instances[simId].RemoveStatic(staticId);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "GetBodyPosition")]
@@ -139,53 +118,44 @@ public static class BepuApi
         _instances[simId].Simulation.Bodies.GetBodyReference(new BodyHandle(bodyId)).Pose.Orientation = position;
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "RemoveBody")]
-    public static void RemoveBody(int simId, int bodyId)
-    {
-        _instances[simId].Simulation.Bodies.Remove(new BodyHandle(bodyId));
-    }
-
     [UnmanagedCallersOnly(EntryPoint = "RemoveShape")]
     public static void RemoveShape(int simId, uint packed)
     {
-        _instances[simId].Simulation.Shapes.Remove(new TypedIndex()
-        {
-            Packed = packed
-        });
+        _instances[simId].RemoveShape(packed);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddBoxShape")]
     public static uint AddBoxShape(int simId, BoxData data)
     {
-        return _instances[simId].Simulation.Shapes.Add(Unsafe.As<BoxData,Box>(ref data)).Packed;
+        return _instances[simId].AddBoxShape(data);
     }
         
     [UnmanagedCallersOnly(EntryPoint = "AddSphereShape")]
     public static uint AddSphereShape(int simId, SphereData data)
     {
-        return _instances[simId].Simulation.Shapes.Add(Unsafe.As<SphereData,Sphere>(ref data)).Packed;
+        return _instances[simId].AddSphereShape(data);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "AddCapsuleShape")]
     public static uint AddCapsuleShape(int simId, CapsuleData data)
     {
-        return _instances[simId].Simulation.Shapes.Add(Unsafe.As<CapsuleData,Capsule>(ref data)).Packed;
+        return _instances[simId].AddCapsuleShape(data);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "Step")]
     public static void Step(int simId, float dt)
     {
-        var instance = _instances[simId];
-        var sim = instance.Simulation;
-        var dispatcher = instance.ThreadDispatcher;
-        sim.Sleep(dispatcher);
-        sim.PredictBoundingBoxes(dt,dispatcher);
-        var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
-        narrowPhase.Callbacks.OnPreCollisionDetection(sim,dispatcher,instance.BufferPool);
-        sim.CollisionDetection(dt,dispatcher);
-        narrowPhase.Callbacks.OnAfterCollisionDetection(dispatcher,instance.BufferPool);
-        sim.Solve(dt,dispatcher);
-        sim.IncrementallyOptimizeDataStructures(dispatcher);
+        _instances[simId].Step(dt);
+        // var sim = instance.Simulation;
+        // var dispatcher = instance.Dispatcher;
+        // sim.Sleep(dispatcher);
+        // sim.PredictBoundingBoxes(dt,dispatcher);
+        // var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
+        // narrowPhase.Callbacks.OnPreCollisionDetection(sim,dispatcher,instance.BufferPool);
+        // sim.CollisionDetection(dt,dispatcher);
+        // narrowPhase.Callbacks.OnAfterCollisionDetection(dispatcher,instance.BufferPool);
+        // sim.Solve(dt,dispatcher);
+        // sim.IncrementallyOptimizeDataStructures(dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepSleep")]
@@ -193,7 +163,7 @@ public static class BepuApi
     {
         var instance = _instances[simId];
         var simulation = instance.Simulation;
-        simulation.Sleep(instance.ThreadDispatcher);
+        simulation.Sleep(instance.Dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepPredictBoundingBoxes")]
@@ -201,7 +171,7 @@ public static class BepuApi
     {
         var instance = _instances[simId];
         var simulation = instance.Simulation;
-        simulation.PredictBoundingBoxes(dt, instance.ThreadDispatcher);
+        simulation.PredictBoundingBoxes(dt, instance.Dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepCollisionDetection")]
@@ -209,7 +179,7 @@ public static class BepuApi
     {
         var instance = _instances[simId];
         var simulation = instance.Simulation;
-        simulation.CollisionDetection(dt, instance.ThreadDispatcher);
+        simulation.CollisionDetection(dt, instance.Dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepSolve")]
@@ -217,7 +187,7 @@ public static class BepuApi
     {
         var instance = _instances[simId];
         var simulation = instance.Simulation;
-        simulation.Solve(dt, instance.ThreadDispatcher);
+        simulation.Solve(dt, instance.Dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepIncrementallyOptimizeDataStructures")]
@@ -225,7 +195,7 @@ public static class BepuApi
     {
         var instance = _instances[simId];
         var simulation = instance.Simulation;
-        simulation.IncrementallyOptimizeDataStructures(instance.ThreadDispatcher);
+        simulation.IncrementallyOptimizeDataStructures(instance.Dispatcher);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "GetTransformPointer")]
@@ -278,21 +248,15 @@ public static class BepuApi
     public static void SetBodyCollisionTracking(int simId, int bodyId, bool track)
     {
         var sim = _instances[simId];
-        var memoryPosition = sim.Simulation.Bodies.HandleToLocation[bodyId];
-        ref var collidable = ref sim.Simulation.Bodies.Sets[memoryPosition.SetIndex].Collidables[memoryPosition.Index];
-        ref var collidableReference = ref sim.Simulation.BroadPhase.ActiveLeaves[collidable.BroadPhaseIndex];
-        collidableReference.TrackCollision = track;
-
+        ref var flags = ref sim.CollidableProperty[new BodyHandle(bodyId)];
+        flags.TrackCollisions = track;
     }
     
     [UnmanagedCallersOnly(EntryPoint = "SetBodyTriggerTracking")]
     public static void SetBodyTriggerTracking(int simId, int bodyId, bool track)
     {
         var sim = _instances[simId];
-        var memoryPosition = sim.Simulation.Bodies.HandleToLocation[bodyId];
-        ref var collidable = ref sim.Simulation.Bodies.Sets[memoryPosition.SetIndex].Collidables[memoryPosition.Index];
-        ref var collidableReference = ref sim.Simulation.BroadPhase.ActiveLeaves[collidable.BroadPhaseIndex];
-        collidableReference.TrackCollision = track;
-
+        ref var flags = ref sim.CollidableProperty[new BodyHandle(bodyId)];
+        flags.IsTrigger = track;
     }
 }

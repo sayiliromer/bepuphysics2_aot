@@ -4,8 +4,6 @@ using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.CollisionDetection;
 using BepuPhysics.Constraints;
-using BepuUtilities;
-using BepuUtilities.Memory;
 
 namespace BepuNative;
 
@@ -18,6 +16,7 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
 
     public NarrowPhaseCallbacks(SpringSettings contactSpringiness, float maximumRecoveryVelocity = 2f, float frictionCoefficient = 1f)
     {
+        CollisionTracker = new CollisionTracker();
         ContactSpringiness = contactSpringiness;
         MaximumRecoveryVelocity = maximumRecoveryVelocity;
         FrictionCoefficient = frictionCoefficient;
@@ -34,15 +33,12 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
         }
     }
     
-    public void OnPreCollisionDetection(Simulation simulation,ThreadDispatcher dispatcher, BufferPool pool)
+    public void OnPreCollisionDetection(ref SimInstance simInstance)
     {
-        CollisionTracker.ThreadDispatcher = dispatcher;
-        CollisionTracker.Pool = pool;
-        CollisionTracker.Simulation = simulation;
-        CollisionTracker.Prepare();
+        CollisionTracker.Prepare(ref simInstance);
     }
 
-    public void OnAfterCollisionDetection(ThreadDispatcher dispatcher, BufferPool instanceBufferPool)
+    public void OnAfterCollisionDetection()
     {
         CollisionTracker.Collect();
     }

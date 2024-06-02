@@ -24,6 +24,7 @@ namespace BepuNativeAOTShared
         public float SpringDamping;
         public float GlobalLinearDamping;
         public float GlobalAngularDamping;
+        public int ThreadCount;
 
         public SimulationDef WithGravity(float x, float y, float z)
         {

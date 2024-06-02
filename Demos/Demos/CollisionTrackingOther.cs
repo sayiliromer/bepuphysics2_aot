@@ -1,85 +1,63 @@
+using System;
+using System.Collections.Generic;
 using System.Numerics;
-using BepuPhysics;
-using BepuPhysics.Collidables;
-using BepuPhysics.Constraints;
 using BepuUtilities;
-using BepuUtilities.Memory;
 using DemoContentLoader;
 using DemoRenderer;
 using BepuNative;
-using BepuPhysics.CollisionDetection;
+using BepuNativeAOTShared;
+using BepuPhysics;
 using DemoUtilities;
+using OpenTK.Input;
 
 namespace Demos.Demos;
 
 public class CollisionTrackingOther : Demo
 {
-    private BufferPool simulationPool;
-    private ThreadDispatcher threadDispatcher;
+    private SimInstance _instance;
+    private List<int> _bodies = new List<int>();
+    private Random _random = new Random(4);
 
     public override void Initialize(ContentArchive content, Camera camera)
     {
         camera.Position = new Vector3(0, 8, -20);
         camera.Yaw = MathHelper.Pi;
-        simulationPool = new BufferPool();
-        threadDispatcher = new ThreadDispatcher(4);
-        var sim = Simulation
-            .Create(
-                simulationPool,
-                new NarrowPhaseCallbacks(new SpringSettings(30, 1)),
-                new PoseIntegratorCallbacks(new Vector3(0,-10,0)),
-                new SolveDescription(8, 1));
-        Simulation = sim;
-        var box = new Box(1, 1, 1);
+        _instance = SimInstance.Create(SimulationDef.Default);
+        Simulation = _instance.Simulation;
+        
+        var box = new BoxData(1, 1, 1);
         var inertia = box.ComputeInertia(1);
-        var boxId = sim.Shapes.Add(box);
+        var boxId = _instance.AddBoxShape(box);
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 200; i++)
         {
-            for (int j = 0; j < 3; j++)
+            for (int j = 0; j < 200; j++)
             {
-                var bodyId = sim.Bodies.Add(new BodyDescription()
-                {
-                    Pose = new Vector3(i * 2,5,j * 2),
-                    LocalInertia = inertia,
-                    Activity = new BodyActivityDescription(0),
-                    Collidable = boxId,
-                    Velocity = Vector3.Zero
-                });
-                SetBodyCollisionTracking(sim,bodyId.Value, true);
+                var bodyId = _instance.AddBody(new Vector3(i * 2, 5, j * 2), Vector3.Zero, inertia, boxId, 0.01f);
+                _instance.SetBodyCollisionTracking(bodyId, true);
+                _bodies.Add(bodyId);
             }
         }
-        var staticId = sim.Statics.Add(new StaticDescription()
-        {
-            Pose = new Vector3(0, -0.5f, 0),
-            Shape = sim.Shapes.Add(new Box(100,1,100))
-        });
-        
+        _instance.AddStatic(new Vector3(0, -0.5f, 0), _instance.AddBoxShape(new BoxData(5000, 1, 5000)));
+    }
+
+    protected override void OnDispose()
+    {
+        _instance.Dispose();
     }
 
     public override void Update(Window window, Camera camera, Input input, float dt)
     {
-        Step(Simulation, threadDispatcher, simulationPool, dt);
-    }
-
-    public static void SetBodyCollisionTracking(Simulation sim, int bodyId, bool track)
-    {
-        var memoryPosition = sim.Bodies.HandleToLocation[bodyId];
-        ref var collidable = ref sim.Bodies.Sets[memoryPosition.SetIndex].Collidables[memoryPosition.Index];
-        ref var collidableReference = ref sim.BroadPhase.ActiveLeaves[collidable.BroadPhaseIndex];
-        collidableReference.TrackCollision = track;
-
-    }
-    
-    public static void Step(Simulation sim,ThreadDispatcher dispatcher, BufferPool bufferPool, float dt)
-    {
-        sim.Sleep(dispatcher);
-        sim.PredictBoundingBoxes(dt,dispatcher);
-        var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
-        narrowPhase.Callbacks.OnPreCollisionDetection(sim,dispatcher,bufferPool);
-        sim.CollisionDetection(dt,dispatcher);
-        narrowPhase.Callbacks.OnAfterCollisionDetection(dispatcher,bufferPool);
-        sim.Solve(dt,dispatcher);
-        sim.IncrementallyOptimizeDataStructures(dispatcher);
+        _instance.Simulation.Profiler.Clear();
+        _instance.Simulation.Profiler.Start(_instance.Simulation);
+        _instance.Step(dt);
+        _instance.Simulation.Profiler.End(_instance.Simulation);
+        if (input.IsDown(Key.Space))
+        {
+            var index = _random.Next(_bodies.Count);
+            var id = _bodies[index];
+            _bodies.RemoveAt(index);
+            _instance.RemoveBody(id);
+        }
     }
 }

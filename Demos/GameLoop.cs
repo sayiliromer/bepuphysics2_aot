@@ -29,7 +29,7 @@ public class GameLoop : IDisposable
             window.Resolution, enableDeviceDebugLayer: false
         );
         Renderer = new Renderer(Surface);
-        Camera = new Camera(window.Resolution.X / (float)window.Resolution.Y, (float)Math.PI / 3, 0.01f, 100000);            
+        Camera = new Camera(window.Resolution.X / (float)window.Resolution.Y, (float)Math.PI / 3, 0.4f, 100000);            
     }
 
     void Update(float dt)
