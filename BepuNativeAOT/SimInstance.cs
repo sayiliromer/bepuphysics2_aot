@@ -133,6 +133,46 @@ public struct SimInstance
         var handle = new BodyHandle(bodyId);
         CollidableProperty[handle].TrackCollisions = isTracked;
     }
+
+    public unsafe CollectionPointer<int> GetStaticsHandlesToLocationPtr()
+    {
+        return new CollectionPointer<int>()
+        {
+            Pointer = (IntPtr)Simulation.Statics.HandleToIndex.Memory,
+            Length = Simulation.Statics.HandleToIndex.Length,
+        };
+    }
+    
+    public unsafe CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr()
+    {
+        return new CollectionPointer<BodyMemoryIndex>()
+        {
+            Pointer = (IntPtr)Simulation.Bodies.HandleToLocation.Memory,
+            Length = Simulation.Bodies.HandleToLocation.Length,
+        };
+    }
+
+    public unsafe CollectionPointer<BodyDynamics> GetBodySetDynamicsBufferPtr(int setIndex)
+    {
+        ref var set = ref Simulation.Bodies.Sets[setIndex];
+        var length = set.Count;
+        ref var dynamicsBuffer = ref set.DynamicsState;
+
+        return new CollectionPointer<BodyDynamics>()
+        {
+            Pointer = (IntPtr)dynamicsBuffer.Memory,
+            Length = length,
+        };
+    }
+
+    public unsafe CollectionPointer<StaticState> GetStaticStateBufferPtr()
+    {
+        return new CollectionPointer<StaticState>()
+        {
+            Pointer = (IntPtr)Simulation.Statics.StaticsBuffer.Memory,
+            Length = Simulation.Statics.Count
+        };
+    }
     
     public void RemoveShape(uint packed)
     {

@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 using BepuNativeAOTShared;
 
 namespace BepuNativeAOTWrapper
@@ -81,6 +82,26 @@ namespace BepuNativeAOTWrapper
         public CollectionPointer GetTransformPointer()
         {
             return GetTransformPointer(Id);
+        }
+
+        public CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr()
+        {
+            return GetBodiesHandlesToLocationPtr(Id);
+        }
+
+        public CollectionPointer<PhysicsDynamics> GetBodySetDynamicsBufferPtr(int setIndex)
+        {
+            return GetBodySetDynamicsBufferPtr(Id, setIndex);
+        }
+
+        public CollectionPointer<int> GetStaticsHandlesToLocationPtr()
+        {
+            return GetStaticsHandlesToLocationPtr(Id);
+        }
+
+        public CollectionPointer<StaticState> GetStaticStateBufferPtr()
+        {
+            return GetStaticStateBufferPtr(Id);
         }
 
         public ShapeHandle AddBoxShape(BoxData data)

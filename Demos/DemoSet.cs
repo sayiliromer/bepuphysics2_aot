@@ -45,6 +45,8 @@ public class DemoSet
     public DemoSet()
     {
         AddOption<CollisionTrackingOther>();
+        AddOption<LargeWalkingDemo>();
+        AddOption<SolverContactEnumerationDemo>();
         AddOption<CollisionTrackingDemoLarge>();
         AddOption<SittingDemo>();
         AddOption<CharacterTestDemo>();
@@ -73,7 +75,6 @@ public class DemoSet
         AddOption<ContactEventsDemo>();
         AddOption<CollisionTrackingDemo>();
         AddOption<CollisionQueryDemo>();
-        AddOption<SolverContactEnumerationDemo>();
         AddOption<CustomVoxelCollidableDemo>();
         AddOption<BlockChainDemo>();
         AddOption<SponsorDemo>();

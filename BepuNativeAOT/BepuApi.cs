@@ -146,16 +146,6 @@ public static class BepuApi
     public static void Step(int simId, float dt)
     {
         _instances[simId].Step(dt);
-        // var sim = instance.Simulation;
-        // var dispatcher = instance.Dispatcher;
-        // sim.Sleep(dispatcher);
-        // sim.PredictBoundingBoxes(dt,dispatcher);
-        // var narrowPhase = (NarrowPhase<NarrowPhaseCallbacks>)sim.NarrowPhase;
-        // narrowPhase.Callbacks.OnPreCollisionDetection(sim,dispatcher,instance.BufferPool);
-        // sim.CollisionDetection(dt,dispatcher);
-        // narrowPhase.Callbacks.OnAfterCollisionDetection(dispatcher,instance.BufferPool);
-        // sim.Solve(dt,dispatcher);
-        // sim.IncrementallyOptimizeDataStructures(dispatcher);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "StepSleep")]
@@ -202,6 +192,30 @@ public static class BepuApi
     public static CollectionPointer GetTransformPointer(int simId)
     {
         return _instances[simId].TransformExtractor.Cache.GetPointer();
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "GetBodiesHandlesToLocationPtr")]
+    public static CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr(int simId)
+    {
+        return _instances[simId].GetBodiesHandlesToLocationPtr();
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "GetBodySetDynamicsBufferPtr")]
+    public static CollectionPointer<BodyDynamics> GetBodySetDynamicsBufferPtr(int simId, int setIndex)
+    {
+        return _instances[simId].GetBodySetDynamicsBufferPtr(setIndex);
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "GetStaticsHandlesToLocationPtr")]
+    public static CollectionPointer<int> GetStaticsHandlesToLocationPtr(int simId)
+    {
+        return _instances[simId].GetStaticsHandlesToLocationPtr();
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "GetStaticStateBufferPtr")]
+    public static CollectionPointer<StaticState> GetStaticStateBufferPtr(int simId)
+    {
+        return _instances[simId].GetStaticStateBufferPtr();
     }
 
     [UnmanagedCallersOnly(EntryPoint = "ExtractPositions")]

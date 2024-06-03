@@ -53,8 +53,16 @@ namespace BepuNativeAOTWrapper
         [DllImport(DllName)]
         private static extern void ExtractPositions(int simId);
         [DllImport(DllName)]
-        public static extern void SetBodyCollisionTracking(int simId, int bodyId, bool track);
+        private static extern void SetBodyCollisionTracking(int simId, int bodyId, bool track);
         [DllImport(DllName)]
         private static extern void SetBodyTriggerTracking(int simId, int bodyId, bool track);
+        [DllImport(DllName)]
+        private static extern CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr(int simId);
+        [DllImport(DllName)]
+        private static extern CollectionPointer<PhysicsDynamics> GetBodySetDynamicsBufferPtr(int simId, int setIndex);
+        [DllImport(DllName)]
+        private static extern CollectionPointer<int> GetStaticsHandlesToLocationPtr(int simId);
+        [DllImport(DllName)]
+        private static extern CollectionPointer<StaticState> GetStaticStateBufferPtr(int simId);
     }
 }

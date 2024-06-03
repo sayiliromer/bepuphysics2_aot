@@ -28,7 +28,7 @@ public class CollisionTrackingOther : Demo
         var inertia = box.ComputeInertia(1);
         var boxId = _instance.AddBoxShape(box);
 
-        var cellSize = 40;
+        var cellSize = 10;
         var cellCount = 10;
 
         for (int k = 0; k < cellCount; k++)
@@ -47,6 +47,19 @@ public class CollisionTrackingOther : Demo
                 }
             }
         }
+
+        // var span = _instance.GetBodiesHandlesToLocationPtr().ToSpan();
+        // var toCompare = Simulation.Bodies.HandleToLocation;
+        // if (span.Length != toCompare.Length)
+        // {
+        //     throw new Exception();
+        // }
+        // for (int i = 0; i < span.Length; i++)
+        // {
+        //     var a = span[i];
+        //     var b = toCompare[i];
+        //     Console.WriteLine(a.Index == b.Index);
+        // }
 
         _instance.AddStatic(new Vector3(0, -0.5f, 0), _instance.AddBoxShape(new BoxData(5000, 1, 5000)));
     }

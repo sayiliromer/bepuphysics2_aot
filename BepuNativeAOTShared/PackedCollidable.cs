@@ -75,4 +75,16 @@ namespace BepuNativeAOTShared
             Static = 2
         }
     }
+    
+    public struct BodyMemoryIndex
+    {
+        /// <summary>
+        /// Index of the set owning the body reference. If the set index is 0, the body is awake. If the set index is greater than zero, the body is asleep.
+        /// </summary>
+        public int SetIndex;
+        /// <summary>
+        /// Index of the body within its owning set.
+        /// </summary>
+        public int Index;
+    }
 }
