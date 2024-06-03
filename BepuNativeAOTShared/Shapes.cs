@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace BepuNativeAOTShared
 {
@@ -6,7 +9,155 @@ namespace BepuNativeAOTShared
     {
         BodyInertiaData ComputeInertia(float mass);
     }
-    
+
+
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    public struct ComboShapeData : IShapeData
+    {
+        [FieldOffset(0)] public int Id;
+        [FieldOffset(1)] public BoxData Box;
+        [FieldOffset(1)] public CapsuleData Capsule;
+        [FieldOffset(1)] public SphereData Sphere;
+        [FieldOffset(1)] public TriangleData Triangle;
+        public BodyInertiaData ComputeInertia(float mass)
+        {
+            switch (Id)
+            {
+                case BoxData.Id: return Box.ComputeInertia(mass);
+                case CapsuleData.Id: return Capsule.ComputeInertia(mass);
+                case SphereData.Id: return Sphere.ComputeInertia(mass);
+                case TriangleData.Id: return Triangle.ComputeInertia(mass);
+            }
+
+            throw new NotImplementedException($"{Id} is not defined");
+        }
+
+        public static implicit operator ComboShapeData(BoxData data)
+        {
+            return new ComboShapeData()
+            {
+                Id = BoxData.Id,
+                Box = data,
+            };
+        }
+        
+        public static implicit operator ComboShapeData(SphereData data)
+        {
+            return new ComboShapeData()
+            {
+                Id = SphereData.Id,
+                Sphere = data,
+            };
+        }
+        
+        public static implicit operator ComboShapeData(CapsuleData data)
+        {
+            return new ComboShapeData()
+            {
+                Id = CapsuleData.Id,
+                Capsule = data,
+            };
+        }
+        
+        public static implicit operator ComboShapeData(TriangleData data)
+        {
+            return new ComboShapeData()
+            {
+                Id = TriangleData.Id,
+                Triangle = data,
+            };
+        }
+    }
+
+    [Serializable]
+    public struct TriangleData : IShapeData
+    {
+        /// <summary>
+        /// First vertex of the triangle in local space.
+        /// </summary>
+        public Vector3 A;
+
+        /// <summary>
+        /// Second vertex of the triangle in local space.
+        /// </summary>
+        public Vector3 B;
+
+        /// <summary>
+        /// Third vertex of the triangle in local space.
+        /// </summary>
+        public Vector3 C;
+
+        /// <summary>
+        /// Creates a triangle shape.
+        /// </summary>
+        /// <param name="a">First vertex of the triangle in local space.</param>
+        /// <param name="b">Second vertex of the triangle in local space.</param>
+        /// <param name="c">Third vertex of the triangle in local space.</param>
+        public TriangleData(Vector3 a, Vector3 b, Vector3 c)
+        {
+            A = a;
+            B = b;
+            C = c;
+        }
+
+        public BodyInertiaData ComputeInertia(float mass)
+        {
+            ComputeTriangleContribution(A, B, C, mass, out var inertiaTensor);
+            BodyInertiaData inertia;
+            Symmetric3x3Data.Invert(inertiaTensor, out inertia.InverseInertiaTensor);
+            inertia.InverseMass = 1f / mass;
+            return inertia;
+        }
+        
+        public static void ComputeTriangleContribution(Vector3 a, Vector3 b, Vector3 c, float mass, out Symmetric3x3Data inertiaTensor)
+        {
+            //This follows the same logic as the tetrahedral inertia tensor calculation, but the transform is different.
+            //There are only two dimensions of interest, but if we wanted to express it as a 3x3 linear transform:
+            // [ B - A ]
+            // [   N   ]
+            // [ C - A ]
+            //where N = (ab x ac) / ||ab x ac||.
+            //In other words, this transform maintains the plane normal such that you can compute the scaled triangle area using (ab x ac) * N.
+            //In practice, that normal won't actually appear in our calculations because we were given the mass explicitly rather than integrating it from density across the area.
+            //So, putting that together and assuming the scaling term is pulled out, here's a chunk of code you can plop into wolfram cloud and whatnot to recreate the results:
+            //f[{x_, y_, z_}] := {{y^2 + z^2, -x * y, -x * z}, {-x * y, x^2 + z^2, -y * z}, {-x * z, -y * z, x^2 + y^2}}
+            //a = { ax, ay, az };
+            //b = { bx, by, bz };
+            //c = { cx, cy, cz };
+            //ab = b - a;
+            //ac = c - a;
+            //n = Cross[ab, ac] / Length[Cross[ab, ac]];
+            //A = { ab, n, ac };
+            //result = Integrate[Integrate[f[{ i, 0, k}.A + a], {k, 0, 1-i}], {i, 0, 1}];
+            //Revisiting the determinant, note that:
+            //density * abs(determinant) = density * volume * 2 = mass * 2
+            //So there's no need to actually compute the determinant/area since we were given the mass directly.
+            var diagonalScaling = mass * (2f / 12f);
+            inertiaTensor.XX = diagonalScaling * (
+                a.Y * a.Y + a.Z * a.Z + b.Y * b.Y + b.Z * b.Z + c.Y * c.Y + c.Z * c.Z +
+                a.Y * b.Y + a.Z * b.Z + a.Y * c.Y + b.Y * c.Y + a.Z * c.Z + b.Z * c.Z);
+            inertiaTensor.YY = diagonalScaling * (
+                a.X * a.X + a.Z * a.Z + b.X * b.X + b.Z * b.Z + c.X * c.X + c.Z * c.Z +
+                a.X * b.X + a.Z * b.Z + a.X * c.X + b.X * c.X + a.Z * c.Z + b.Z * c.Z);
+            inertiaTensor.ZZ = diagonalScaling * (
+                a.X * a.X + a.Y * a.Y + b.X * b.X + b.Y * b.Y + c.X * c.X + c.Y * c.Y +
+                a.X * b.X + a.Y * b.Y + a.X * c.X + b.X * c.X + a.Y * c.Y + b.Y * c.Y);
+            var offScaling = mass * (2f / 24f);
+            inertiaTensor.YX = offScaling * (-a.Y * (b.X + c.X) - b.Y * (2 * b.X + c.X) - (b.X + 2 * c.X) * c.Y - a.X * (2 * a.Y + b.Y + c.Y));
+            inertiaTensor.ZX = offScaling * (-a.Z * (b.X + c.X) - b.Z * (2 * b.X + c.X) - (b.X + 2 * c.X) * c.Z - a.X * (2 * a.Z + b.Z + c.Z));
+            inertiaTensor.ZY = offScaling * (-a.Z * (b.Y + c.Y) - b.Z * (2 * b.Y + c.Y) - (b.Y + 2 * c.Y) * c.Z - a.Y * (2 * a.Z + b.Z + c.Z));
+            //TODO: Note that the above implementation isn't exactly optimal. Assuming for now that the performance isn't going to be relevant.
+            //That could change given certain convex hull use cases, but in that situation you should probably just jump to vectorizing over multiple tetrahedra at a time.
+            //(Plus some basic term caching.)
+        }
+        
+        /// <summary>
+        /// Type id of triangle shapes.
+        /// </summary>
+        public const int Id = 3;
+    }
+
+    [Serializable]
     public struct BoxData : IShapeData
     {
         /// <summary>
@@ -63,8 +214,14 @@ namespace BepuNativeAOTShared
             inertia.InverseInertiaTensor.ZZ = inertia.InverseMass * 3 / (x2 + y2);
             return inertia;
         }
+        
+        /// <summary>
+        /// Type id of box shapes.
+        /// </summary>
+        public const int Id = 2;
     }
 
+    [Serializable]
     public struct SphereData : IShapeData
     {
         /// <summary>
@@ -93,8 +250,14 @@ namespace BepuNativeAOTShared
             inertia.InverseInertiaTensor.ZZ = inertia.InverseInertiaTensor.XX;
             return inertia;
         }
+        
+        /// <summary>
+        /// Type id of sphere shapes.
+        /// </summary>
+        public const int Id = 0;
     }
 
+    [Serializable]
     public struct CapsuleData : IShapeData
     {
         /// <summary>
@@ -144,5 +307,10 @@ namespace BepuNativeAOTShared
             inertia.InverseInertiaTensor.ZZ = inertia.InverseInertiaTensor.XX;
             return inertia;
         }
+        
+        /// <summary>
+        /// Type id of capsule shapes.
+        /// </summary>
+        public const int Id = 1;
     }
 }

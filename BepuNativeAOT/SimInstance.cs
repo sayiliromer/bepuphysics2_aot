@@ -112,6 +112,24 @@ public struct SimInstance
         Simulation.Solve(dt,Dispatcher);
         Simulation.IncrementallyOptimizeDataStructures(Dispatcher);
     }
+
+    public uint AddShape(ComboShapeData data)
+    {
+        switch (data.Id)
+        {
+            case BoxData.Id: return AddBoxShape(data.Box);
+            case SphereData.Id: return AddSphereShape(data.Sphere);
+            case CapsuleData.Id: return AddCapsuleShape(data.Capsule);
+            case TriangleData.Id: return AddTriangleShape(data.Triangle);
+        }
+        //Instead of an error, let's give them a stick.
+        return Simulation.Shapes.Add(new Box(0.5f,2,0.5f)).Packed;
+    }
+    
+    public uint AddTriangleShape(TriangleData data)
+    {
+        return Simulation.Shapes.Add(Unsafe.As<TriangleData,Triangle>(ref data)).Packed;
+    }
     
     public uint AddBoxShape(BoxData data)
     {
@@ -148,7 +166,7 @@ public struct SimInstance
         return new CollectionPointer<BodyMemoryIndex>()
         {
             Pointer = (IntPtr)Simulation.Bodies.HandleToLocation.Memory,
-            Length = Simulation.Bodies.HandleToLocation.Length,
+            Length = Simulation.Bodies.GetBodyCount()
         };
     }
 

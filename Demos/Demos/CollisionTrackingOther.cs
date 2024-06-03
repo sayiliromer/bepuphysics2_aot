@@ -16,18 +16,10 @@ public class CollisionTrackingOther : Demo
     private SimInstance _instance;
     private List<int> _bodies = new List<int>();
     private Random _random = new Random(4);
+    private int _addCounter;
 
-    public override void Initialize(ContentArchive content, Camera camera)
+    void Add(int y)
     {
-        camera.Position = new Vector3(0, 8, -20);
-        camera.Yaw = MathHelper.Pi;
-        _instance = SimInstance.Create(SimulationDef.Default);
-        Simulation = _instance.Simulation;
-        
-        var box = new BoxData(1, 1, 1);
-        var inertia = box.ComputeInertia(1);
-        var boxId = _instance.AddBoxShape(box);
-
         var cellSize = 10;
         var cellCount = 10;
 
@@ -39,7 +31,11 @@ public class CollisionTrackingOther : Demo
                 {
                     for (int j = 0; j < cellSize; j++)
                     {
-                        var bodyId = _instance.AddBody(new Vector3(i * 2 + k * cellSize * 4, 2, j * 2 + l * cellSize * 4), new Vector3(0, 0, 0), inertia, boxId,
+
+                        var box = new BoxData(1, 1, 1);
+                        var inertia = box.ComputeInertia(1);
+                        var boxId = _instance.AddBoxShape(box);
+                        var bodyId = _instance.AddBody(new Vector3(i * 2 + k * cellSize * 4, y, j * 2 + l * cellSize * 4), new Vector3(0, 0, 0), inertia, boxId,
                             0.1f);
                         _instance.SetBodyCollisionTracking(bodyId, true);
                         _bodies.Add(bodyId);
@@ -47,6 +43,18 @@ public class CollisionTrackingOther : Demo
                 }
             }
         }
+
+        _addCounter++;
+    }
+    
+    public override void Initialize(ContentArchive content, Camera camera)
+    {
+        camera.Position = new Vector3(0, 8, -20);
+        camera.Yaw = MathHelper.Pi;
+        _instance = SimInstance.Create(SimulationDef.Default);
+        Simulation = _instance.Simulation;
+        
+        Add(2);
 
         // var span = _instance.GetBodiesHandlesToLocationPtr().ToSpan();
         // var toCompare = Simulation.Bodies.HandleToLocation;
@@ -81,6 +89,17 @@ public class CollisionTrackingOther : Demo
             var id = _bodies[index];
             _bodies.RemoveAt(index);
             _instance.RemoveBody(id);
+            
+            
+            var bodyCount = Simulation.Bodies.CountBodies();
+            var bodyCount2 = Simulation.Bodies.HandlePool.HighestPossiblyClaimedId - Simulation.Bodies.HandlePool.AvailableIdCount + 1;
+            var setCount = Simulation.Bodies.Sets.Length;
+            Console.WriteLine($"{bodyCount} {bodyCount2} {setCount}");
+        }
+
+        if (input.IsDown(Key.P) && !input.WasDown(Key.P) && _bodies.Count > 0)
+        {
+            Add(2 * (_addCounter + 1));
         }
     }
 }
