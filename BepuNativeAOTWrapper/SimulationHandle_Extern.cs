@@ -25,6 +25,8 @@ namespace BepuNativeAOTWrapper
         [DllImport(DllName)]
         private static extern void StepIncrementallyOptimizeDataStructures(int simId);
         [DllImport(DllName)]
+        private static extern uint AddShape(int simId, ComboShapeData data);
+        [DllImport(DllName)]
         private static extern uint AddBoxShape(int simId, BoxData data);
         [DllImport(DllName)]
         private static extern uint AddSphereShape(int simId, SphereData data);

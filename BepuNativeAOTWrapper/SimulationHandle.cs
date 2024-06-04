@@ -104,30 +104,35 @@ namespace BepuNativeAOTWrapper
             return GetStaticStateBufferPtr(Id);
         }
 
-        public ShapeHandle AddBoxShape(BoxData data)
+        public ShapeHandle AddShape(ComboShapeData data)
         {
-            var packed = AddBoxShape(Id, data);
             return new ShapeHandle()
             {
-                Packed = packed
+                Packed = AddShape(Id, data)
+            };
+        }
+
+        public ShapeHandle AddBoxShape(BoxData data)
+        {
+            return new ShapeHandle()
+            {
+                Packed = AddBoxShape(Id, data)
             };
         }
         
         public ShapeHandle AddSphereShape(SphereData data)
         {
-            var packed = AddSphereShape(Id, data);
             return new ShapeHandle()
             {
-                Packed = packed
+                Packed = AddSphereShape(Id, data)
             };
         }
         
         public ShapeHandle AddCapsuleShape(CapsuleData data)
         {
-            var packed = AddCapsuleShape(Id, data);
             return new ShapeHandle()
             {
-                Packed = packed
+                Packed = AddCapsuleShape(Id, data)
             };
         }
 

@@ -124,6 +124,12 @@ public static class BepuApi
         _instances[simId].RemoveShape(packed);
     }
 
+    [UnmanagedCallersOnly(EntryPoint = "AddShape")]
+    public static uint AddShape(int simId, ComboShapeData data)
+    {
+        return _instances[simId].AddShape(data);
+    }
+
     [UnmanagedCallersOnly(EntryPoint = "AddBoxShape")]
     public static uint AddBoxShape(int simId, BoxData data)
     {

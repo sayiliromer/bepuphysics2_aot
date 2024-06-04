@@ -83,7 +83,7 @@ public struct SimInstance
             },
         };
         var handle = Simulation.Statics.Add(sd);
-        CollidableProperty.Allocate(handle);
+        CollidableProperty.Allocate(handle).Packed = 0;
         return handle.Value;
     }
 

@@ -20,9 +20,8 @@ public class SittingDemo : Demo
         //camera.Yaw = MathF.PI / 2;
         Simulation = Simulation.Create(BufferPool, new DemoNarrowPhaseCallbacks(new SpringSettings(30, 1)), new DemoPoseIntegratorCallbacks(new Vector3(0, -10, 0)), new SolveDescription(8, 1));
         var boxShape = new Box(1, 1, 1);
-        var boxInertia = boxShape.ComputeInertia(1);
+        var boxInertia = boxShape.ComputeInertia(70);
         var boxHandle = Simulation.Shapes.Add(boxShape);
-        
         _body = Simulation.Bodies.Add(new BodyDescription()
         {
             Pose = new Vector3(0,0.5f,0),

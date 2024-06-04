@@ -44,6 +44,7 @@ public class DemoSet
 
     public DemoSet()
     {
+        AddOption<WeldDemo>();
         AddOption<MedievalCitiesDemo>();
         AddOption<ColosseumDemo>();
         AddOption<CollisionTrackingOther>();
