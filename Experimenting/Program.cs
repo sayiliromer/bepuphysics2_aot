@@ -1,10 +1,26 @@
 ﻿// See https://aka.ms/new-console-template for more information
+
+using System.Runtime.CompilerServices;
 using BenchmarkDotNet.Attributes;
+using BepuNative;
+using BepuNativeAOTShared;
 using BepuUtilities.Collections;
 using BepuUtilities.Memory;
 
-
+unsafe
+{
+    Console.WriteLine(sizeof(QuickDictionary<int, int, IntComparer>));
+    Console.WriteLine(sizeof(DictionaryPointer<int,int>));
+    Console.WriteLine(sizeof(TrackedCollisions));
+    Console.WriteLine(sizeof(Some));
+    Console.WriteLine(Unsafe.SizeOf<CollectionPointer<int>>());
+}
 return 0;
+
+public struct Some
+{
+    public byte Hmm;
+}
 // var coll = new Collision();
 // coll.Contact1.FeatureId = 5;
 // coll.Contact3.FeatureId = 2;

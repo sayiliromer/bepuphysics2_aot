@@ -44,15 +44,15 @@ public class DemoSet
 
     public DemoSet()
     {
+        AddOption<CollisionTrackingOther>();
+        AddOption<LargeWalkingDemo>();
+        AddOption<CollisionTrackingDemoLarge>();
         AddOption<ArrowDemo>();
         AddOption<SittingDemo>();
         AddOption<WeldDemo>();
         AddOption<MedievalCitiesDemo>();
         AddOption<ColosseumDemo>();
-        AddOption<CollisionTrackingOther>();
-        AddOption<LargeWalkingDemo>();
         AddOption<SolverContactEnumerationDemo>();
-        AddOption<CollisionTrackingDemoLarge>();
         AddOption<CharacterTestDemo>();
         AddOption<CarDemo>();
         AddOption<TankDemo>();

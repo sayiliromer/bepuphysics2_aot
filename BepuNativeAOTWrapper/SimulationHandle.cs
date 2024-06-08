@@ -23,20 +23,20 @@ namespace BepuNativeAOTWrapper
             };
         }
 
-        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, ShapeHandle shape, float sleepThreshold)
+        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, ShapeHandle shape, float sleepThreshold)
         {
             return new BodyHandle()
             {
-                Index = AddBody(Id, transform, velocity, inertiaData, shape.Packed, sleepThreshold)
+                Index = AddBody(Id, transform, velocity, inertiaData, properties, shape.Packed, sleepThreshold)
             };
         }
 
-        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, ShapeHandle shape,
+        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, ShapeHandle shape,
             float sleepThreshold)
         {
             return new BodyHandle()
             {
-                Index = AddBodyAutoInertia(Id, transform, velocity, mass, rotationLockFlag, shape.Packed, sleepThreshold)
+                Index = AddBodyAutoInertia(Id, transform, velocity, mass, rotationLockFlag, properties, shape.Packed, sleepThreshold)
             };
         }
         
@@ -45,11 +45,11 @@ namespace BepuNativeAOTWrapper
             RemoveBody(Id, handle.Index);
         }
 
-        public StaticHandle AddStatic(PhysicsTransform transform, ShapeHandle shape)
+        public StaticHandle AddStatic(PhysicsTransform transform, CollidableAdditionalData properties, ShapeHandle shape)
         {
             return new StaticHandle()
             {
-                Index = AddStatic(Id, transform, shape.Packed)
+                Index = AddStatic(Id, transform, properties, shape.Packed)
             };
         }
         
@@ -117,7 +117,11 @@ namespace BepuNativeAOTWrapper
         {
             return GetStaticStateBufferPtr(Id);
         }
-
+        public CollisionArrayPointers GetCollisionPtr()
+        {
+            return GetCollisionPtr(Id);
+        }
+        
         public ShapeHandle AddPrimitiveShape(ComboShapeData data)
         {
             return new ShapeHandle()

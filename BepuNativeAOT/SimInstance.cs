@@ -20,7 +20,7 @@ public struct SimInstance
     public BufferPool BufferPool;
     public ThreadDispatcher Dispatcher;
     public CollisionTracker CollisionTracker;
-    public CollidableProperty<CollidableFlags> CollidableProperty;
+    public CollidableProperty<CollidableAdditionalData> Property;
 
     public static SimInstance Create(SimulationDef def)
     {
@@ -51,18 +51,20 @@ public struct SimInstance
         BufferPool = bufferPool;
         CollisionTracker = collisionTracker;
         Dispatcher = dispatcher;
-        CollidableProperty = new CollidableProperty<CollidableFlags>(simulation, bufferPool);
+        Property = new CollidableProperty<CollidableAdditionalData>(simulation, bufferPool);
+        var narrow = (NarrowPhase<NarrowPhaseCallbacks>)Simulation.NarrowPhase;
+        narrow.Callbacks.Property = Property;
     }
     
     public void Dispose()
     {
         Simulation.Dispose();
         Dispatcher.Dispose();
-        CollidableProperty.Dispose();
+        Property.Dispose();
         BufferPool.Clear();
         BufferPool = null;
     }
-    public int AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, uint packedShape, float sleepThreshold)
+    public int AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
     {
         var bd = new BodyDescription()
         {
@@ -73,14 +75,14 @@ public struct SimInstance
             Activity = new BodyActivityDescription(sleepThreshold)
         };
         var handle = Simulation.Bodies.Add(bd);
-        CollidableProperty.Allocate(handle).Packed = 0;
+        Property.Allocate(handle) = properties;
         return handle.Value;
     }
 
-    public int AddBodyAutoInertia(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLock, uint packedShape, float sleepThreshold)
+    public int AddBodyAutoInertia(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLock, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
     {
         var inertia = GetInertia(mass, rotationLock, packedShape);
-        return AddBody(transform, velocity,Unsafe.As<BodyInertia,BodyInertiaData>(ref inertia) , packedShape, sleepThreshold);
+        return AddBody(transform, velocity,Unsafe.As<BodyInertia,BodyInertiaData>(ref inertia) ,properties, packedShape, sleepThreshold);
     }
 
     private BodyInertia GetInertia(float mass, RotationLockFlag rotationLock,uint packedShape)
@@ -149,7 +151,7 @@ public struct SimInstance
         return inertia;
     }
     
-    public int AddStatic(PhysicsTransform transform, uint packedShape)
+    public int AddStatic(PhysicsTransform transform, CollidableAdditionalData properties, uint packedShape)
     {
         var sd = new StaticDescription()
         {
@@ -160,21 +162,21 @@ public struct SimInstance
             },
         };
         var handle = Simulation.Statics.Add(sd);
-        CollidableProperty.Allocate(handle).Packed = 0;
+        Property.Allocate(handle) = properties;
         return handle.Value;
     }
 
     public void RemoveBody(int bodyId)
     {
         var handle = new BodyHandle(bodyId);
-        CollidableProperty[handle].Packed = 0;
+        Property.Allocate(handle) = default;
         Simulation.Bodies.Remove(handle);
     }
 
     public void RemoveStatic(int staticId)
     {
         var handle = new StaticHandle(staticId);
-        CollidableProperty[handle].Packed = 0;
+        Property.Allocate(handle) = default;
         Simulation.Statics.Remove(handle);
     }
 
@@ -243,7 +245,7 @@ public struct SimInstance
     public void SetBodyCollisionTracking(int bodyId, bool isTracked)
     {
         var handle = new BodyHandle(bodyId);
-        CollidableProperty[handle].TrackCollisions = isTracked;
+        Property[handle].Setting.RiseEvent = isTracked;
     }
     
     public void AwakenSets(ref QuickList<int> setIndexes)
@@ -306,6 +308,24 @@ public struct SimInstance
         {
             Pointer = (IntPtr)Simulation.Statics.StaticsBuffer.Memory,
             Length = Simulation.Statics.Count
+        };
+    }
+
+    public unsafe CollisionArrayPointers GetCollisionPtr()
+    {
+        var collisionCount = CollisionTracker.Collisions.Count;
+        var keyArray = CollisionTracker.Collisions.Keys.ToCollectionPtr(collisionCount);
+        var values = CollisionTracker.Collisions.Values;
+        var valueArray = new CollectionPointer<DictionaryPointer<CollidableIndex, LivingContact>>()
+        {
+            Pointer = (IntPtr)values.Memory,
+            Length = collisionCount,
+        };
+
+        return new CollisionArrayPointers()
+        {
+            Keys = keyArray,
+            Values = valueArray
         };
     }
     

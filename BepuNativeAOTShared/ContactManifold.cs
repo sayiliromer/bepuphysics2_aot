@@ -6,23 +6,33 @@ using System.Runtime.InteropServices;
 
 namespace BepuNativeAOTShared
 {
+    public struct CollisionArrayPointers
+    {
+        public CollectionPointer<CollidableIndex> Keys;
+        public CollectionPointer<DictionaryPointer<CollidableIndex, LivingContact>> Values;
+    }
+    
     public struct CollidableIndex
     {
         public PackedCollidable Collidable;
         public int ChildIndex;
+        public int UserData;
 
-        public CollidableIndex(PackedCollidable collidable, int childIndex)
+        public CollidableIndex(PackedCollidable collidable, int childIndex, int userData)
         {
             Collidable = collidable;
             ChildIndex = childIndex;
+            UserData = userData;
         }
 
-        public CollidableIndex(PackedCollidable collidable)
+        public CollidableIndex(PackedCollidable collidable, int userData)
         {
             Collidable = collidable;
             ChildIndex = -1;
+            UserData = userData;
         }
     }
+
     public struct Collision
     {
         public CollidableIndex A;

@@ -1,3 +1,4 @@
+using System;
 using BepuNativeAOTShared;
 using BepuPhysics;
 using BepuUtilities;
@@ -5,6 +6,17 @@ using BepuUtilities.Memory;
 
 namespace BepuNative;
 
+public static unsafe class UnsafeExtensions
+{
+    public static CollectionPointer<T> ToCollectionPtr<T>(this Buffer<T> buffer, int count) where T : unmanaged
+    {
+        return new CollectionPointer<T>()
+        {
+            Length = count,
+            Pointer = (IntPtr)buffer.Memory
+        };
+    }
+}
 public class TransformExtractor
 {
     public TransformCache Cache;

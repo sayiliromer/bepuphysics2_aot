@@ -20,8 +20,8 @@ public class CollisionTrackingOther : Demo
 
     void Add(int y)
     {
-        var cellSize = 10;
-        var cellCount = 10;
+        var cellSize = 1;
+        var cellCount = 1;
 
         for (int k = 0; k < cellCount; k++)
         {
@@ -31,11 +31,11 @@ public class CollisionTrackingOther : Demo
                 {
                     for (int j = 0; j < cellSize; j++)
                     {
-
+                        var cp = CollidableAdditionalData.Default;
                         var box = new BoxData(1, 1, 1);
                         var inertia = box.ComputeInertia(1);
                         var boxId = _instance.AddBoxShape(box);
-                        var bodyId = _instance.AddBody(new Vector3(i * 2 + k * cellSize * 4, y, j * 2 + l * cellSize * 4), new Vector3(0, 0, 0), inertia, boxId,
+                        var bodyId = _instance.AddBody(new Vector3(i * 2 + k * cellSize * 4, y, j * 2 + l * cellSize * 4), new Vector3(0, 0, 0), inertia,cp, boxId,
                             0.1f);
                         _instance.SetBodyCollisionTracking(bodyId, true);
                         _bodies.Add(bodyId);
@@ -69,7 +69,8 @@ public class CollisionTrackingOther : Demo
         //     Console.WriteLine(a.Index == b.Index);
         // }
 
-        _instance.AddStatic(new Vector3(0, -0.5f, 0), _instance.AddBoxShape(new BoxData(5000, 1, 5000)));
+        
+        _instance.AddStatic(new Vector3(0, -0.5f, 0), CollidableAdditionalData.Default, _instance.AddBoxShape(new BoxData(5000, 1, 5000)));
     }
 
     protected override void OnDispose()

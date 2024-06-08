@@ -31,10 +31,9 @@ public struct TrackedCollisions
 public class CollisionTracker
 {
     public QuickDictionary<CollidableIndex, TrackedCollisions, CollidableIndexComparer> Collisions;
-    public Buffer<QuickList<Collision>> WorkerPairs;
+    public Buffer<QuickList<Collision>> WorkerCollisionLists;
     private Simulation _sim;
     private IThreadDispatcher _dispatcher;
-    private CollidableProperty<CollidableFlags> _properties;
     private BufferPool _pool;
     private int _lastCollisionCount;
     
@@ -42,7 +41,6 @@ public class CollisionTracker
     {
         _sim = simInstance.Simulation;
         _dispatcher = simInstance.Dispatcher;
-        _properties = simInstance.CollidableProperty;
         _pool = simInstance.BufferPool;
         
         if (!Collisions.Values.Allocated)
@@ -50,13 +48,13 @@ public class CollisionTracker
             Collisions = new QuickDictionary<CollidableIndex, TrackedCollisions, CollidableIndexComparer>(1024, _pool);
         }
         
-        if (!WorkerPairs.Allocated)
+        if (!WorkerCollisionLists.Allocated)
         {
-            WorkerPairs = new Buffer<QuickList<Collision>>(_dispatcher.ThreadCount, _pool);
+            WorkerCollisionLists = new Buffer<QuickList<Collision>>(_dispatcher.ThreadCount, _pool);
             
             for (int i = 0; i < _dispatcher.ThreadCount; i++)
             {
-                WorkerPairs[i] = new QuickList<Collision>(512, _dispatcher.WorkerPools[i]);
+                WorkerCollisionLists[i] = new QuickList<Collision>(512, _dispatcher.WorkerPools[i]);
             }
         }
         
@@ -153,9 +151,9 @@ public class CollisionTracker
     public void Collect()
     {
         //var sw = Stopwatch.StartNew();
-        for (int i = 0; i < WorkerPairs.Length; i++)
+        for (int i = 0; i < WorkerCollisionLists.Length; i++)
         {
-            ref var workerList = ref WorkerPairs[i];
+            ref var workerList = ref WorkerCollisionLists[i];
             for (int j = 0; j < workerList.Count; j++)
             {
                 var collision = workerList[j];
@@ -194,22 +192,26 @@ public class CollisionTracker
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Report<TManifold, TRevertStatus>(int workerIndex, CollidableIndex a, CollidableIndex b, ref TManifold manifold)
-        where TManifold : unmanaged, IContactManifold<TManifold> where TRevertStatus : unmanaged, IReverseStatus
+    public void Report<TManifold, TRevertStatus>(
+        int workerIndex,
+        in CollidableAdditionalData aProp, 
+        in CollidableIndex a, 
+        in CollidableIndex b, 
+        ref TManifold manifold
+        ) where TManifold : unmanaged, IContactManifold<TManifold> where TRevertStatus : unmanaged, IReverseStatus
     {
-        ref var flags = ref _properties.Get(ref a.Collidable);
-        if (!flags.TrackCollisions) return;
+        if (!aProp.Setting.RiseEvent) return;
         bool hasDepth = false;
         for (int i = 0; i < manifold.Count; i++)
         {
-            if (manifold.GetDepth(i) > -0.0001f)
+            if (manifold.GetDepth(i) > -0.000001f)
             {
                 hasDepth = true;
                 break;
             }
         }
         if(!hasDepth) return;
-        ref var resultCollisionPair = ref WorkerPairs[workerIndex].Allocate(_dispatcher.WorkerPools[workerIndex]);
+        ref var resultCollisionPair = ref WorkerCollisionLists[workerIndex].Allocate(_dispatcher.WorkerPools[workerIndex]);
         resultCollisionPair.A = a;
         resultCollisionPair.B = b;
         if (typeof(TManifold) == typeof(ConvexContactManifold)) //Compile time constant

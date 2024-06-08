@@ -76,21 +76,21 @@ public static class BepuApi
     }
         
     [UnmanagedCallersOnly(EntryPoint = "AddBody")]
-    public static int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, uint packedShape, float sleepThreshold)
+    public static int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
     {
-        return _instances[simId].AddBody(transform, velocity, inertiaData, packedShape, sleepThreshold);
+        return _instances[simId].AddBody(transform, velocity, inertiaData,properties, packedShape, sleepThreshold);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "AddBodyAutoInertia")]
-    public static int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, uint packedShape, float sleepThreshold)
+    public static int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
     {
-        return _instances[simId].AddBodyAutoInertia(transform, velocity, mass, rotationLockFlag, packedShape, sleepThreshold);
+        return _instances[simId].AddBodyAutoInertia(transform, velocity, mass, rotationLockFlag, properties, packedShape, sleepThreshold);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddStatic")]
-    public static int AddStatic(int simId, PhysicsTransform transform, uint packedShape)
+    public static int AddStatic(int simId, PhysicsTransform transform, CollidableAdditionalData properties, uint packedShape)
     {
-        return _instances[simId].AddStatic(transform, packedShape);
+        return _instances[simId].AddStatic(transform, properties, packedShape);
     }
         
     [UnmanagedCallersOnly(EntryPoint = "RemoveBody")]
@@ -238,6 +238,12 @@ public static class BepuApi
     {
         return _instances[simId].GetStaticStateBufferPtr();
     }
+    
+    [UnmanagedCallersOnly(EntryPoint = "GetCollisionPtr")]
+    public static CollisionArrayPointers GetCollisionPtr(int simId)
+    {
+        return _instances[simId].GetCollisionPtr();
+    }
 
     [UnmanagedCallersOnly(EntryPoint = "SetGravity")]
     public static void SetGravity(int simId, Vector3 gravity)
@@ -277,16 +283,16 @@ public static class BepuApi
     public static void SetBodyCollisionTracking(int simId, int bodyId, bool track)
     {
         var sim = _instances[simId];
-        ref var flags = ref sim.CollidableProperty[new BodyHandle(bodyId)];
-        flags.TrackCollisions = track;
+        ref var flags = ref sim.Property[new BodyHandle(bodyId)];
+        flags.Setting.RiseEvent = track;
     }
     
     [UnmanagedCallersOnly(EntryPoint = "SetBodyTriggerTracking")]
     public static void SetBodyTriggerTracking(int simId, int bodyId, bool track)
     {
         var sim = _instances[simId];
-        ref var flags = ref sim.CollidableProperty[new BodyHandle(bodyId)];
-        flags.IsTrigger = track;
+        ref var flags = ref sim.Property[new BodyHandle(bodyId)];
+        flags.Setting.IsTrigger = track;
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AwakenSets")]

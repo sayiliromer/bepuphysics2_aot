@@ -14,4 +14,5 @@ public static class SimExtensions
         var hp = bodies.HandlePool;
         return hp.HighestPossiblyClaimedId - hp.AvailableIdCount + 1;
     }
+    
 }

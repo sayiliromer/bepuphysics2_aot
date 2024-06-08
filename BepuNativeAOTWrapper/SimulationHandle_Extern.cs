@@ -37,13 +37,13 @@ namespace BepuNativeAOTWrapper
         [DllImport(DllName)]
         private static extern void RemoveShape(int simId, uint packed);
         [DllImport(DllName)]
-        private static extern int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, uint packedShape, float sleepThreshold);
+        private static extern int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, uint packedShape, float sleepThreshold);
         [DllImport(DllName)]
-        private static extern int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, uint packedShape, float sleepThreshold);
+        private static extern int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, uint packedShape, float sleepThreshold);
         [DllImport(DllName)]
         private static extern void RemoveBody(int simId, int bodyId);
         [DllImport(DllName)]
-        private static extern int AddStatic(int simId, PhysicsTransform transform, uint packedShape);
+        private static extern int AddStatic(int simId, PhysicsTransform transform, CollidableAdditionalData properties, uint packedShape);
         [DllImport(DllName)]
         private static extern void RemoveStatic(int simId, int staticId);
         [DllImport(DllName)]
@@ -66,6 +66,8 @@ namespace BepuNativeAOTWrapper
         private static extern CollectionPointer<int> GetStaticsHandlesToLocationPtr(int simId);
         [DllImport(DllName)]
         private static extern CollectionPointer<StaticState> GetStaticStateBufferPtr(int simId);
+        [DllImport(DllName)]
+        private static extern CollisionArrayPointers GetCollisionPtr(int simId);
         [DllImport(DllName)]
         private static extern void AwakenSets(int simId, CollectionPointer<int> setIndexPtr);
         [DllImport(DllName)]
