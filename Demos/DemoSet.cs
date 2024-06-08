@@ -44,6 +44,8 @@ public class DemoSet
 
     public DemoSet()
     {
+        AddOption<ArrowDemo>();
+        AddOption<SittingDemo>();
         AddOption<WeldDemo>();
         AddOption<MedievalCitiesDemo>();
         AddOption<ColosseumDemo>();
@@ -51,7 +53,6 @@ public class DemoSet
         AddOption<LargeWalkingDemo>();
         AddOption<SolverContactEnumerationDemo>();
         AddOption<CollisionTrackingDemoLarge>();
-        AddOption<SittingDemo>();
         AddOption<CharacterTestDemo>();
         AddOption<CarDemo>();
         AddOption<TankDemo>();

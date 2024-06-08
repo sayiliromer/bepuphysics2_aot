@@ -1,9 +1,18 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 // ReSharper disable InconsistentNaming
 
 namespace BepuNativeAOTShared
 {
+    [Flags]
+    public enum RotationLockFlag : byte
+    {
+        X = 1,
+        Y = 2,
+        Z = 4,
+    }
+    
     [StructLayout(LayoutKind.Sequential, Size = 32, Pack = 4)]
     public struct BodyInertiaData
     {

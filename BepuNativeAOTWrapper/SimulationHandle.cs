@@ -30,6 +30,15 @@ namespace BepuNativeAOTWrapper
                 Index = AddBody(Id, transform, velocity, inertiaData, shape.Packed, sleepThreshold)
             };
         }
+
+        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, ShapeHandle shape,
+            float sleepThreshold)
+        {
+            return new BodyHandle()
+            {
+                Index = AddBodyAutoInertia(Id, transform, velocity, mass, rotationLockFlag, shape.Packed, sleepThreshold)
+            };
+        }
         
         public void RemoveBody(BodyHandle handle)
         {
@@ -74,14 +83,19 @@ namespace BepuNativeAOTWrapper
             SetBodyRotation(Id,bodyId, position);
         }
 
-        public void ExtractPositions()
+        public void AwakenSets(CollectionPointer<int> setIndexPtr)
         {
-            ExtractPositions(Id);
+            AwakenSets(Id, setIndexPtr);
         }
-
-        public CollectionPointer GetTransformPointer()
+        
+        public void AwakenBody(int bodyId)
         {
-            return GetTransformPointer(Id);
+            AwakenBody(Id, bodyId);
+        }
+        
+        public void AwakenBodies(CollectionPointer<int> bodyHandlesPtr)
+        {
+            AwakenBodies(Id, bodyHandlesPtr);
         }
 
         public CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr()
@@ -104,11 +118,19 @@ namespace BepuNativeAOTWrapper
             return GetStaticStateBufferPtr(Id);
         }
 
-        public ShapeHandle AddShape(ComboShapeData data)
+        public ShapeHandle AddPrimitiveShape(ComboShapeData data)
         {
             return new ShapeHandle()
             {
-                Packed = AddShape(Id, data)
+                Packed = AddPrimitiveShape(Id, data)
+            };
+        }
+        
+        public ShapeHandle AddCompoundShape(CollectionPointer<ShapeChildData> collectionPointer, bool isBig)
+        {
+            return new ShapeHandle()
+            {
+                Packed = AddCompoundShape(Id, collectionPointer,isBig)
             };
         }
 

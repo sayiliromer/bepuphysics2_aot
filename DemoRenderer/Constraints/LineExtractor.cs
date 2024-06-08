@@ -3,6 +3,8 @@ using BepuUtilities.Collections;
 using BepuUtilities.Memory;
 using BepuPhysics;
 using System;
+using OpenTK;
+using Vector3 = System.Numerics.Vector3;
 
 namespace DemoRenderer.Constraints
 {
@@ -108,6 +110,20 @@ namespace DemoRenderer.Constraints
             looper.For(0, constraintJobs.Count + boundingBoxJobs.Count, executeJobAction);
             looper.Dispatcher = null;
 
+            // for (int i = 0; i < simulation.BroadPhase.ActiveTree.NodeCount; i++)
+            // {
+            //     ref var node = ref simulation.BroadPhase.ActiveTree.Nodes[i];
+            //     BoundingBoxLineExtractor.WriteBoundsLines(node.A.Min,node.A.Max,new Vector3(0.6f,0.2f,0.2f), Vector3.Zero, ref Allocate(12));
+            //     BoundingBoxLineExtractor.WriteBoundsLines(node.B.Min,node.B.Max,new Vector3(0.6f,0.2f,0.2f), Vector3.Zero, ref Allocate(12));
+            // }
+            //
+            // for (int i = 0; i < simulation.BroadPhase.StaticTree.NodeCount; i++)
+            // {
+            //     ref var node = ref simulation.BroadPhase.StaticTree.Nodes[i];
+            //     BoundingBoxLineExtractor.WriteBoundsLines(node.A.Min,node.A.Max,new Vector3(0.2f,0.6f,0.2f), Vector3.Zero, ref Allocate(12));
+            //     BoundingBoxLineExtractor.WriteBoundsLines(node.B.Min,node.B.Max,new Vector3(0.2f,0.6f,0.2f), Vector3.Zero, ref Allocate(12));
+            // }
+            
             if (constraintJobs.Span.Allocated)
             {
                 constraintJobs.Dispose(pool);

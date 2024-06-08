@@ -14,9 +14,9 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
     public float MaximumRecoveryVelocity;
     public float FrictionCoefficient;
 
-    public NarrowPhaseCallbacks(SpringSettings contactSpringiness, float maximumRecoveryVelocity = 2f, float frictionCoefficient = 1f)
+    public NarrowPhaseCallbacks(SpringSettings contactSpringiness, CollisionTracker collisionTracker, float maximumRecoveryVelocity = 2f, float frictionCoefficient = 1f)
     {
-        CollisionTracker = new CollisionTracker();
+        CollisionTracker = collisionTracker;
         ContactSpringiness = contactSpringiness;
         MaximumRecoveryVelocity = maximumRecoveryVelocity;
         FrictionCoefficient = frictionCoefficient;

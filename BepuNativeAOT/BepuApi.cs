@@ -9,6 +9,7 @@ using BepuPhysics.Collidables;
 using BepuPhysics.CollisionDetection;
 using BepuPhysics.Constraints;
 using BepuUtilities;
+using BepuUtilities.Collections;
 using BepuUtilities.Memory;
 
 namespace BepuNative;
@@ -29,11 +30,15 @@ public static class BepuApi
     [UnmanagedCallersOnly(EntryPoint = "Dispose")]
     public static void Dispose()
     {
-        for (int i = 0; i < _instances.Count; i++)
+        if (_instances != null)
         {
-            _instances[i].Dispose();
+            Console.WriteLine($"We have {_instances.Count} instances");
+            for (int i = 0; i < _instances.Count; i++)
+            {
+                _instances[i].Dispose();
+            }
         }
-            
+        
         _instances?.Clear();
         _emptyIndexes?.Clear();
             
@@ -74,6 +79,12 @@ public static class BepuApi
     public static int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, uint packedShape, float sleepThreshold)
     {
         return _instances[simId].AddBody(transform, velocity, inertiaData, packedShape, sleepThreshold);
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "AddBodyAutoInertia")]
+    public static int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, uint packedShape, float sleepThreshold)
+    {
+        return _instances[simId].AddBodyAutoInertia(transform, velocity, mass, rotationLockFlag, packedShape, sleepThreshold);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddStatic")]
@@ -124,10 +135,20 @@ public static class BepuApi
         _instances[simId].RemoveShape(packed);
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "AddShape")]
-    public static uint AddShape(int simId, ComboShapeData data)
+    [UnmanagedCallersOnly(EntryPoint = "AddCompoundShape")]
+    public static uint AddCompoundShape(int simId, CollectionPointer<ShapeChildData> data, bool isBig)
     {
-        return _instances[simId].AddShape(data);
+        unsafe
+        {
+            var shapeChild = new Buffer<ShapeChildData>(data.Pointer.ToPointer(), data.Length);
+            return _instances[simId].AddCompoundShape(shapeChild,isBig);
+        }
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "AddPrimitiveShape")]
+    public static uint AddPrimitiveShape(int simId, ComboShapeData data)
+    {
+        return _instances[simId].AddPrimitiveShape(data);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddBoxShape")]
@@ -194,12 +215,6 @@ public static class BepuApi
         simulation.IncrementallyOptimizeDataStructures(instance.Dispatcher);
     }
 
-    [UnmanagedCallersOnly(EntryPoint = "GetTransformPointer")]
-    public static CollectionPointer GetTransformPointer(int simId)
-    {
-        return _instances[simId].TransformExtractor.Cache.GetPointer();
-    }
-
     [UnmanagedCallersOnly(EntryPoint = "GetBodiesHandlesToLocationPtr")]
     public static CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr(int simId)
     {
@@ -222,12 +237,6 @@ public static class BepuApi
     public static CollectionPointer<StaticState> GetStaticStateBufferPtr(int simId)
     {
         return _instances[simId].GetStaticStateBufferPtr();
-    }
-
-    [UnmanagedCallersOnly(EntryPoint = "ExtractPositions")]
-    public static void ExtractPositions(int simId)
-    {
-        _instances[simId].ExtractPositions();
     }
 
     [UnmanagedCallersOnly(EntryPoint = "SetGravity")]
@@ -278,5 +287,26 @@ public static class BepuApi
         var sim = _instances[simId];
         ref var flags = ref sim.CollidableProperty[new BodyHandle(bodyId)];
         flags.IsTrigger = track;
+    }
+
+    [UnmanagedCallersOnly(EntryPoint = "AwakenSets")]
+    public static unsafe void AwakenSets(int simId, CollectionPointer<int> setIndexPtr)
+    {
+        var setIndexList = new QuickList<int>(setIndexPtr.ToBuffer());
+        setIndexList.Count = setIndexPtr.Length;
+        var sim = _instances[simId];
+        sim.AwakenSets(ref setIndexList);
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "AwakenBody")]
+    public static void AwakenBody(int simId, int bodyId)
+    {
+        _instances[simId].AwakenBody(bodyId);
+    }
+    
+    [UnmanagedCallersOnly(EntryPoint = "AwakenBodies")]
+    public static void AwakenBodies(int simId, CollectionPointer<int> bodyHandlesPtr)
+    {
+        _instances[simId].AwakenBodies(bodyHandlesPtr);
     }
 }

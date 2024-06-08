@@ -486,8 +486,8 @@ public struct Controls
                 GrabRotate = Key.Q,
                 MouseSensitivity = 1.5e-3f,
                 CameraSlowMoveSpeed = 0.5f,
-                CameraMoveSpeed = 5,
-                CameraFastMoveSpeed = 50,
+                CameraMoveSpeed = 25,
+                CameraFastMoveSpeed = 250,
                 SlowTimesteps = (MouseButton.Middle, Key.O),
 
                 LockMouse = Key.Tab,

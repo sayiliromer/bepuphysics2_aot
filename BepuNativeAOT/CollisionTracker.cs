@@ -40,7 +40,6 @@ public class CollisionTracker
     
     public void Prepare(ref SimInstance simInstance)
     {
-        var sw = Stopwatch.StartNew();
         _sim = simInstance.Simulation;
         _dispatcher = simInstance.Dispatcher;
         _properties = simInstance.CollidableProperty;
@@ -153,7 +152,7 @@ public class CollisionTracker
 
     public void Collect()
     {
-        var sw = Stopwatch.StartNew();
+        //var sw = Stopwatch.StartNew();
         for (int i = 0; i < WorkerPairs.Length; i++)
         {
             ref var workerList = ref WorkerPairs[i];

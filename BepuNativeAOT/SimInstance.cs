@@ -6,7 +6,9 @@ using BepuPhysics;
 using BepuPhysics.Collidables;
 using BepuPhysics.CollisionDetection;
 using BepuPhysics.Constraints;
+using BepuPhysics.Constraints.Custom;
 using BepuUtilities;
+using BepuUtilities.Collections;
 using BepuUtilities.Memory;
 
 namespace BepuNative;
@@ -17,8 +19,7 @@ public struct SimInstance
     public Simulation Simulation;
     public BufferPool BufferPool;
     public ThreadDispatcher Dispatcher;
-    public TransformExtractor TransformExtractor;
-    public StateSynchronizer StateSynchronizer;
+    public CollisionTracker CollisionTracker;
     public CollidableProperty<CollidableFlags> CollidableProperty;
 
     public static SimInstance Create(SimulationDef def)
@@ -27,31 +28,35 @@ public struct SimInstance
         var maxThread = GetThreadCount();
         var threadCount = def.ThreadCount <= 0 ? maxThread : (int)MathF.Min(def.ThreadCount, maxThread);
         var threadDispatcher = new ThreadDispatcher(threadCount);
-        
+        var collisionTracker = new CollisionTracker();
         var sim = Simulation
             .Create(
                 simulationPool,
-                new NarrowPhaseCallbacks(new SpringSettings(def.SpringFrequency, def.SpringDamping)),
+                new NarrowPhaseCallbacks(new SpringSettings(def.SpringFrequency, def.SpringDamping), collisionTracker),
                 new PoseIntegratorCallbacks(def.Gravity, def.GlobalLinearDamping, def.GlobalAngularDamping),
                 new SolveDescription(def.VelocityIteration, def.SubStepping));
+        sim.Solver.Register<ArrowServo>();
         
-        
-        return new SimInstance(sim, simulationPool, threadDispatcher);
+        return new SimInstance(sim, simulationPool,collisionTracker, threadDispatcher);
     }
 
-    public SimInstance(Simulation simulation, BufferPool bufferPool, ThreadDispatcher dispatcher)
+    public SimInstance(
+        Simulation simulation, 
+        BufferPool bufferPool,
+        CollisionTracker collisionTracker,
+        ThreadDispatcher dispatcher
+        )
     {
         Simulation = simulation;
         BufferPool = bufferPool;
+        CollisionTracker = collisionTracker;
         Dispatcher = dispatcher;
-        TransformExtractor = new TransformExtractor(bufferPool);
         CollidableProperty = new CollidableProperty<CollidableFlags>(simulation, bufferPool);
     }
     
     public void Dispose()
     {
         Simulation.Dispose();
-        TransformExtractor.Dispose();
         Dispatcher.Dispose();
         CollidableProperty.Dispose();
         BufferPool.Clear();
@@ -70,6 +75,78 @@ public struct SimInstance
         var handle = Simulation.Bodies.Add(bd);
         CollidableProperty.Allocate(handle).Packed = 0;
         return handle.Value;
+    }
+
+    public int AddBodyAutoInertia(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLock, uint packedShape, float sleepThreshold)
+    {
+        var inertia = GetInertia(mass, rotationLock, packedShape);
+        return AddBody(transform, velocity,Unsafe.As<BodyInertia,BodyInertiaData>(ref inertia) , packedShape, sleepThreshold);
+    }
+
+    private BodyInertia GetInertia(float mass, RotationLockFlag rotationLock,uint packedShape)
+    {
+        var shapes = Simulation.Shapes;
+        var typedIndex = new TypedIndex()
+        {
+            Packed = packedShape
+        };
+
+        BodyInertia inertia;
+        if (typedIndex.Type == Box.Id)
+        {
+            inertia = shapes.GetShape<Box>(typedIndex.Index).ComputeInertia(mass);
+        }
+        else if (typedIndex.Type == Sphere.Id)
+        {
+            inertia = shapes.GetShape<Sphere>(typedIndex.Index).ComputeInertia(mass);
+        }
+        else if (typedIndex.Type == Capsule.Id)
+        {
+            inertia = shapes.GetShape<Capsule>(typedIndex.Index).ComputeInertia(mass);
+        }
+        else if (typedIndex.Type == Compound.Id)
+        {
+            var compound = shapes.GetShape<Compound>(typedIndex.Index);
+            Span<float> masses = stackalloc float[compound.Children.Length];
+            var perObjMass = mass / masses.Length;
+            for (int i = 0; i < masses.Length; i++)
+            {
+                masses[i] = perObjMass;
+            }
+            inertia = compound.ComputeInertia(masses,shapes);
+        }
+        else if (typedIndex.Type == BigCompound.Id)
+        {
+            var compound = shapes.GetShape<BigCompound>(typedIndex.Index);
+            Span<float> masses = stackalloc float[compound.Children.Length];
+            var perObjMass = mass / masses.Length;
+            for (int i = 0; i < masses.Length; i++)
+            {
+                masses[i] = perObjMass;
+            }
+            inertia = compound.ComputeInertia(masses,shapes);
+        }
+        else
+        {
+            inertia = new Box(1, 1, 1).ComputeInertia(mass);
+        }
+
+        if (rotationLock.HasFlag(RotationLockFlag.X))
+        {
+            inertia.InverseInertiaTensor.XX = 0;
+        }
+        
+        if (rotationLock.HasFlag(RotationLockFlag.Y))
+        {
+            inertia.InverseInertiaTensor.YY = 0;
+        }
+        
+        if (rotationLock.HasFlag(RotationLockFlag.Z))
+        {
+            inertia.InverseInertiaTensor.ZZ = 0;
+        }
+
+        return inertia;
     }
     
     public int AddStatic(PhysicsTransform transform, uint packedShape)
@@ -113,17 +190,33 @@ public struct SimInstance
         Simulation.IncrementallyOptimizeDataStructures(Dispatcher);
     }
 
-    public uint AddShape(ComboShapeData data)
+    public uint AddCompoundShape(Buffer<ShapeChildData> shapeChild, bool isBig)
+    {
+        var copied = new Buffer<CompoundChild>(shapeChild.Length, BufferPool);
+        unsafe
+        {
+            Unsafe.CopyBlockUnaligned(copied.Memory, shapeChild.Memory, (uint)(Unsafe.SizeOf<CompoundChild>() * shapeChild.Length));
+        }
+        if (isBig)
+        {
+            return Simulation.Shapes.Add(new BigCompound(copied,Simulation.Shapes, BufferPool, Dispatcher)).Packed;
+        }
+        else
+        {
+            return Simulation.Shapes.Add(new Compound(copied)).Packed;
+        }
+    }
+
+    public uint AddPrimitiveShape(ComboShapeData data)
     {
         switch (data.Id)
         {
-            case BoxData.Id: return AddBoxShape(data.Box);
-            case SphereData.Id: return AddSphereShape(data.Sphere);
-            case CapsuleData.Id: return AddCapsuleShape(data.Capsule);
-            case TriangleData.Id: return AddTriangleShape(data.Triangle);
+            case ShapeType.Sphere: return AddSphereShape(data.Sphere);
+            case ShapeType.Capsule: return AddCapsuleShape(data.Capsule);
+            case ShapeType.Box: return AddBoxShape(data.Box);
         }
         //Instead of an error, let's give them a stick.
-        return Simulation.Shapes.Add(new Box(0.5f,2,0.5f)).Packed;
+        return Simulation.Shapes.Add(new Box(0.3f,2,0.3f)).Packed;
     }
     
     public uint AddTriangleShape(TriangleData data)
@@ -135,6 +228,7 @@ public struct SimInstance
     {
         return Simulation.Shapes.Add(Unsafe.As<BoxData,Box>(ref data)).Packed;
     }
+
         
     public uint AddSphereShape(SphereData data)
     {
@@ -150,6 +244,29 @@ public struct SimInstance
     {
         var handle = new BodyHandle(bodyId);
         CollidableProperty[handle].TrackCollisions = isTracked;
+    }
+    
+    public void AwakenSets(ref QuickList<int> setIndexes)
+    {
+        Simulation.Awakener.AwakenSets(ref setIndexes, Dispatcher);;
+    }
+
+    public void AwakenBody(int bodyId)
+    {
+        Simulation.Awakener.AwakenBody(new BodyHandle(bodyId));
+    }
+
+    public void AwakenBodies(CollectionPointer<int> bodyIndexPtr)
+    {
+        var bodyHandles = bodyIndexPtr.ToBuffer();
+        var sets = new QuickList<int>(bodyHandles.Length, BufferPool);
+        var bodies = Simulation.Bodies;
+        for (int i = 0; i < bodyHandles.Length; i++)
+        {
+            sets.AddUnsafely(bodies.HandleToLocation[bodyHandles[i]].SetIndex);
+        }
+        Simulation.Awakener.AwakenSets(ref sets);
+        sets.Dispose(BufferPool);
     }
 
     public unsafe CollectionPointer<int> GetStaticsHandlesToLocationPtr()
@@ -169,7 +286,7 @@ public struct SimInstance
             Length = Simulation.Bodies.GetBodyCount()
         };
     }
-
+    
     public unsafe CollectionPointer<BodyDynamics> GetBodySetDynamicsBufferPtr(int setIndex)
     {
         ref var set = ref Simulation.Bodies.Sets[setIndex];
@@ -198,10 +315,5 @@ public struct SimInstance
         {
             Packed = packed
         });
-    }
-
-    public void ExtractPositions()
-    {
-        TransformExtractor.Refresh(Simulation);
     }
 }

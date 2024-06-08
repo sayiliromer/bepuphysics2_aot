@@ -2,7 +2,6 @@ using System.Runtime.InteropServices;
 
 namespace BepuNativeAOTShared
 {
-    
     [StructLayout(LayoutKind.Explicit, Size = 1)]
     public struct CollidableFlags
     {

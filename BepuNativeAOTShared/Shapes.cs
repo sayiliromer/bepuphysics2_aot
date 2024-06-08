@@ -10,15 +10,31 @@ namespace BepuNativeAOTShared
         BodyInertiaData ComputeInertia(float mass);
     }
 
+    public enum ShapeType
+    {
+        Sphere = 0,
+        Capsule = 1,
+        Box = 2,
+        Compound = 6,
+        BigCompound = 6,
+    }
 
-    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShapeChildData
+    {
+        public Quaternion Rotation;
+        public Vector3 Position;
+        public uint PackedId;
+    }
+
+    [StructLayout(LayoutKind.Explicit, Size = 16)]
     public struct ComboShapeData : IShapeData
     {
-        [FieldOffset(0)] public int Id;
-        [FieldOffset(1)] public BoxData Box;
-        [FieldOffset(1)] public CapsuleData Capsule;
-        [FieldOffset(1)] public SphereData Sphere;
-        [FieldOffset(1)] public TriangleData Triangle;
+        [FieldOffset(0)] public ShapeType Id;
+        [FieldOffset(4)] public BoxData Box;
+        [FieldOffset(4)] public CapsuleData Capsule;
+        [FieldOffset(4)] public SphereData Sphere;
+        
         public BodyInertiaData ComputeInertia(float mass)
         {
             switch (Id)
@@ -26,7 +42,6 @@ namespace BepuNativeAOTShared
                 case BoxData.Id: return Box.ComputeInertia(mass);
                 case CapsuleData.Id: return Capsule.ComputeInertia(mass);
                 case SphereData.Id: return Sphere.ComputeInertia(mass);
-                case TriangleData.Id: return Triangle.ComputeInertia(mass);
             }
 
             throw new NotImplementedException($"{Id} is not defined");
@@ -59,14 +74,14 @@ namespace BepuNativeAOTShared
             };
         }
         
-        public static implicit operator ComboShapeData(TriangleData data)
-        {
-            return new ComboShapeData()
-            {
-                Id = TriangleData.Id,
-                Triangle = data,
-            };
-        }
+        // public static implicit operator ComboShapeData(TriangleData data)
+        // {
+        //     return new ComboShapeData()
+        //     {
+        //         Id = TriangleData.Id,
+        //         Triangle = data,
+        //     };
+        // }
     }
 
     [Serializable]
@@ -218,7 +233,7 @@ namespace BepuNativeAOTShared
         /// <summary>
         /// Type id of box shapes.
         /// </summary>
-        public const int Id = 2;
+        public const ShapeType Id = ShapeType.Box;
     }
 
     [Serializable]
@@ -254,7 +269,7 @@ namespace BepuNativeAOTShared
         /// <summary>
         /// Type id of sphere shapes.
         /// </summary>
-        public const int Id = 0;
+        public const ShapeType Id = ShapeType.Sphere;
     }
 
     [Serializable]
@@ -311,6 +326,6 @@ namespace BepuNativeAOTShared
         /// <summary>
         /// Type id of capsule shapes.
         /// </summary>
-        public const int Id = 1;
+        public const ShapeType Id = ShapeType.Capsule;
     }
 }
