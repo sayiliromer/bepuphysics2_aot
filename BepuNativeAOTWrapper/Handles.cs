@@ -14,4 +14,9 @@ namespace BepuNativeAOTWrapper
     {
         public int Index;
     }
+
+    public struct ConstraintHandle
+    {
+        public int Index;
+    }
 }

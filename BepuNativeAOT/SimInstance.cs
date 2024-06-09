@@ -64,14 +64,14 @@ public struct SimInstance
         BufferPool.Clear();
         BufferPool = null;
     }
-    public int AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
+    public int AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, CollidableDefinition collidableDef, float sleepThreshold)
     {
         var bd = new BodyDescription()
         {
             Pose = new RigidPose(transform.Position,transform.Rotation),
             Velocity = velocity,
             LocalInertia = Unsafe.As<BodyInertiaData, BodyInertia>(ref inertiaData),
-            Collidable = new TypedIndex() { Packed = packedShape },
+            Collidable = Unsafe.As<CollidableDefinition, CollidableDescription>(ref collidableDef),
             Activity = new BodyActivityDescription(sleepThreshold)
         };
         var handle = Simulation.Bodies.Add(bd);
@@ -79,10 +79,10 @@ public struct SimInstance
         return handle.Value;
     }
 
-    public int AddBodyAutoInertia(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLock, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
+    public int AddBodyAutoInertia(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLock, CollidableAdditionalData properties,  CollidableDefinition collidableDef, float sleepThreshold)
     {
-        var inertia = GetInertia(mass, rotationLock, packedShape);
-        return AddBody(transform, velocity,Unsafe.As<BodyInertia,BodyInertiaData>(ref inertia) ,properties, packedShape, sleepThreshold);
+        var inertia = GetInertia(mass, rotationLock, collidableDef.Shape);
+        return AddBody(transform, velocity,Unsafe.As<BodyInertia,BodyInertiaData>(ref inertia) ,properties, collidableDef, sleepThreshold);
     }
 
     private BodyInertia GetInertia(float mass, RotationLockFlag rotationLock,uint packedShape)

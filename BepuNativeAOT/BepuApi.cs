@@ -76,15 +76,15 @@ public static class BepuApi
     }
         
     [UnmanagedCallersOnly(EntryPoint = "AddBody")]
-    public static int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
+    public static int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, CollidableDefinition collidableDef, float sleepThreshold)
     {
-        return _instances[simId].AddBody(transform, velocity, inertiaData,properties, packedShape, sleepThreshold);
+        return _instances[simId].AddBody(transform, velocity, inertiaData,properties, collidableDef, sleepThreshold);
     }
     
     [UnmanagedCallersOnly(EntryPoint = "AddBodyAutoInertia")]
-    public static int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, uint packedShape, float sleepThreshold)
+    public static int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, CollidableDefinition collidableDef, float sleepThreshold)
     {
-        return _instances[simId].AddBodyAutoInertia(transform, velocity, mass, rotationLockFlag, properties, packedShape, sleepThreshold);
+        return _instances[simId].AddBodyAutoInertia(transform, velocity, mass, rotationLockFlag, properties, collidableDef, sleepThreshold);
     }
 
     [UnmanagedCallersOnly(EntryPoint = "AddStatic")]

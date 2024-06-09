@@ -12,7 +12,8 @@ namespace BepuNativeAOTShared
         Y = 2,
         Z = 4,
     }
-    
+
+
     [StructLayout(LayoutKind.Sequential, Size = 32, Pack = 4)]
     public struct BodyInertiaData
     {

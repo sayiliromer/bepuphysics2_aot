@@ -37,9 +37,9 @@ namespace BepuNativeAOTWrapper
         [DllImport(DllName)]
         private static extern void RemoveShape(int simId, uint packed);
         [DllImport(DllName)]
-        private static extern int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, uint packedShape, float sleepThreshold);
+        private static extern int AddBody(int simId, PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, CollidableDefinition collidableDef, float sleepThreshold);
         [DllImport(DllName)]
-        private static extern int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, uint packedShape, float sleepThreshold);
+        private static extern int AddBodyAutoInertia(int simId, PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, CollidableDefinition collidableDef, float sleepThreshold);
         [DllImport(DllName)]
         private static extern void RemoveBody(int simId, int bodyId);
         [DllImport(DllName)]

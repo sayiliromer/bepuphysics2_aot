@@ -23,20 +23,20 @@ namespace BepuNativeAOTWrapper
             };
         }
 
-        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, ShapeHandle shape, float sleepThreshold)
+        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, BodyInertiaData inertiaData, CollidableAdditionalData properties, CollidableDefinition collidableDef, float sleepThreshold)
         {
             return new BodyHandle()
             {
-                Index = AddBody(Id, transform, velocity, inertiaData, properties, shape.Packed, sleepThreshold)
+                Index = AddBody(Id, transform, velocity, inertiaData, properties, collidableDef, sleepThreshold)
             };
         }
 
-        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, ShapeHandle shape,
+        public BodyHandle AddBody(PhysicsTransform transform, Vector3 velocity, float mass, RotationLockFlag rotationLockFlag, CollidableAdditionalData properties, CollidableDefinition collidableDef,
             float sleepThreshold)
         {
             return new BodyHandle()
             {
-                Index = AddBodyAutoInertia(Id, transform, velocity, mass, rotationLockFlag, properties, shape.Packed, sleepThreshold)
+                Index = AddBodyAutoInertia(Id, transform, velocity, mass, rotationLockFlag, properties, collidableDef, sleepThreshold)
             };
         }
         
