@@ -11,25 +11,31 @@ namespace BepuNativeAOTShared
         public CollectionPointer<CollidableIndex> Keys;
         public CollectionPointer<DictionaryPointer<CollidableIndex, LivingContact>> Values;
     }
+
+    public struct EntityData
+    {
+        public int Index;
+        public int Version;
+    }
     
     public struct CollidableIndex
     {
         public PackedCollidable Collidable;
         public int ChildIndex;
-        public int UserData;
+        public EntityData EntityData;
 
-        public CollidableIndex(PackedCollidable collidable, int childIndex, int userData)
+        public CollidableIndex(PackedCollidable collidable, int childIndex, EntityData entityData)
         {
             Collidable = collidable;
             ChildIndex = childIndex;
-            UserData = userData;
+            EntityData = entityData;
         }
 
-        public CollidableIndex(PackedCollidable collidable, int userData)
+        public CollidableIndex(PackedCollidable collidable, EntityData entityData)
         {
             Collidable = collidable;
             ChildIndex = -1;
-            UserData = userData;
+            EntityData = entityData;
         }
     }
 

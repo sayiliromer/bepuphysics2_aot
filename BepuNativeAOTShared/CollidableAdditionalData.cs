@@ -122,15 +122,19 @@ namespace BepuNativeAOTShared
         public static CollidableAdditionalData Default => new CollidableAdditionalData()
         {
             Setting = CollisionSetting.Default,
-            UserData = int.MinValue,
+            EntityData = new EntityData()
+            {
+                Index = int.MinValue,
+                Version = int.MinValue
+            }
         };
         public CollisionSetting Setting;
-        public int UserData;
+        public EntityData EntityData;
 
-        public CollidableAdditionalData(CollisionSetting setting, int userData)
+        public CollidableAdditionalData(CollisionSetting setting, EntityData entityData)
         {
             Setting = setting;
-            UserData = userData;
+            EntityData = entityData;
         }
     }
 }

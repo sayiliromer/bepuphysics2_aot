@@ -98,6 +98,9 @@ namespace BepuNativeAOTWrapper
             AwakenBodies(Id, bodyHandlesPtr);
         }
 
+        /// <summary>
+        /// Be aware this is a dense array, so it does not represent count of bodies, we may have gaps inside the array.
+        /// </summary>
         public CollectionPointer<BodyMemoryIndex> GetBodiesHandlesToLocationPtr()
         {
             return GetBodiesHandlesToLocationPtr(Id);
@@ -218,6 +221,11 @@ namespace BepuNativeAOTWrapper
         public void SetBodyTriggerTracking(int bodyId, bool track)
         {
             SetBodyTriggerTracking(Id, bodyId, track);
+        }
+        
+        public int AddArrowConstraint(int bodyHandle)
+        {
+            return AddArrowConstraint(Id, bodyHandle);
         }
         
         public void Dispose()

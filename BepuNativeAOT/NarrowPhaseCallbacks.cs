@@ -73,8 +73,8 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
     {
         var propA = Property[pair.A];
         var propB = Property[pair.B];
-        var a = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.A),propA.UserData);
-        var b = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.B),propB.UserData);
+        var a = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.A),propA.EntityData);
+        var b = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.B),propB.EntityData);
         
         CollisionTracker.Report<TManifold,CollisionTracker.NonReversed>(workerIndex,propA, a, b, ref manifold);
         CollisionTracker.Report<TManifold,CollisionTracker.Reversed>(workerIndex, propB,b, a, ref manifold);
@@ -90,8 +90,8 @@ public struct NarrowPhaseCallbacks : INarrowPhaseCallbacks
     {
         var propA = Property[pair.A];
         var propB = Property[pair.B];
-        var a = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.A), childIndexA,propA.UserData);
-        var b = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.B), childIndexB,propB.UserData);
+        var a = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.A), childIndexA,propA.EntityData);
+        var b = new CollidableIndex(Unsafe.As<CollidableReference, PackedCollidable>(ref pair.B), childIndexB,propB.EntityData);
         
         CollisionTracker.Report<ConvexContactManifold, CollisionTracker.NonReversed>(workerIndex, propA, a, b, ref manifold);
         CollisionTracker.Report<ConvexContactManifold, CollisionTracker.Reversed>(workerIndex, propB, b, a, ref manifold);

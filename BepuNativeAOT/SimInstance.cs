@@ -285,7 +285,7 @@ public struct SimInstance
         return new CollectionPointer<BodyMemoryIndex>()
         {
             Pointer = (IntPtr)Simulation.Bodies.HandleToLocation.Memory,
-            Length = Simulation.Bodies.GetBodyCount()
+            Length = Simulation.Bodies.HandleToLocation.Length
         };
     }
     
@@ -335,5 +335,14 @@ public struct SimInstance
         {
             Packed = packed
         });
+    }
+
+    public int AddArrowConstraint(int bodyHandle)
+    {
+        return Simulation.Solver.Add(new BodyHandle(bodyHandle), new ArrowServo()
+        {
+            ServoSettings = new ServoSettings(100,0,0.01f),
+            SpringSettings = new SpringSettings(30,1)
+        }).Value;
     }
 }

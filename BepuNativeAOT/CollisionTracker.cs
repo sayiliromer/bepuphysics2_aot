@@ -95,29 +95,51 @@ public class CollisionTracker
             else
             {
                 var col = Collisions.Keys[i].Collidable;
-                if (col.Mobility != PackedCollidable.Type.Static && _sim.Bodies[new BodyHandle(col.BodyHandle)].Awake)
+                if (col.Mobility != PackedCollidable.Type.Static)
                 {
+                    var bodyRef = _sim.Bodies[new BodyHandle(col.BodyHandle)];
+                    
                     //Reset everything if body is awaken
-                    for (int j = 0; j < tracked.Pairs.Count; j++)
+                    if (bodyRef.Awake || !bodyRef.Exists)
                     {
-                        ref var p = ref tracked.Pairs.Values[j];
-                        p.IsAlive = false;
-                        p.IsNew = false;
+                        for (int j = 0; j < tracked.Pairs.Count; j++)
+                        {
+                            ref var p = ref tracked.Pairs.Values[j];
+                            p.IsAlive = false;
+                            p.IsNew = false;
+                        }
                     }
                 }
                 else
                 {
-                    for (int j = 0; j < tracked.Pairs.Count; j++)
+                    var staticRef = _sim.Statics[new StaticHandle(col.BodyHandle)];
+                    if (!staticRef.Exists)
                     {
-                        ref var p = ref tracked.Pairs.Values[j];
-                        var other = tracked.Pairs.Keys[j];
-                        if (other.Collidable.Mobility != PackedCollidable.Type.Static && _sim.Bodies[new BodyHandle(other.Collidable.BodyHandle)].Awake)
+                        for (int j = 0; j < tracked.Pairs.Count; j++)
                         {
-                            //An Awake body! reset alive status.
-                            //If body is sleeping we won't be able to keep this contact alive otherwise.
+                            ref var p = ref tracked.Pairs.Values[j];
                             p.IsAlive = false;
+                            p.IsNew = false;
                         }
-                        p.IsNew = false;
+                    }
+                    else
+                    {
+                        for (int j = 0; j < tracked.Pairs.Count; j++)
+                        {
+                            ref var p = ref tracked.Pairs.Values[j];
+                            var other = tracked.Pairs.Keys[j];
+                            if (other.Collidable.Mobility != PackedCollidable.Type.Static)
+                            {
+                                var bodyRef = _sim.Bodies[new BodyHandle(other.Collidable.BodyHandle)];
+                                if (bodyRef.Awake || !bodyRef.Exists)
+                                {
+                                    //An Awake body! reset alive status.
+                                    //If body is sleeping we won't be able to keep this contact alive otherwise.
+                                    p.IsAlive = false;
+                                }
+                            }
+                            p.IsNew = false;
+                        }
                     }
                 }
             }

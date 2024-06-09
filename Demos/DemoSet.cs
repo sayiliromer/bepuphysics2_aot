@@ -44,13 +44,13 @@ public class DemoSet
 
     public DemoSet()
     {
+        AddOption<MedievalCitiesDemo>();
         AddOption<CollisionTrackingOther>();
         AddOption<LargeWalkingDemo>();
         AddOption<CollisionTrackingDemoLarge>();
         AddOption<ArrowDemo>();
         AddOption<SittingDemo>();
         AddOption<WeldDemo>();
-        AddOption<MedievalCitiesDemo>();
         AddOption<ColosseumDemo>();
         AddOption<SolverContactEnumerationDemo>();
         AddOption<CharacterTestDemo>();

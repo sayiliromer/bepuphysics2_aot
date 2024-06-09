@@ -315,4 +315,10 @@ public static class BepuApi
     {
         _instances[simId].AwakenBodies(bodyHandlesPtr);
     }
+
+    [UnmanagedCallersOnly(EntryPoint = "AddArrowConstraint")]
+    public static int AddArrowConstraint(int simId, int bodyId)
+    {
+        return _instances[simId].AddArrowConstraint(bodyId);
+    }
 }

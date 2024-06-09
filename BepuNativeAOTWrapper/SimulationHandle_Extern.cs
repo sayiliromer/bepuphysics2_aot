@@ -74,5 +74,7 @@ namespace BepuNativeAOTWrapper
         private static extern void AwakenBody(int simId, int bodyId);
         [DllImport(DllName)]
         private static extern void AwakenBodies(int simId, CollectionPointer<int> bodyHandlesPtr);
+        [DllImport(DllName)]
+        private static extern int AddArrowConstraint(int simId, int bodyId);
     }
 }

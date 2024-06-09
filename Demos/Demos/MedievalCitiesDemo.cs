@@ -50,7 +50,7 @@ public class MedievalCitiesDemo : Demo
         var looper = new Some();
         var sw = Stopwatch.StartNew();
         Simulation.BroadPhase.GetOverlaps(min, max, ref looper);
-        Console.WriteLine($"{looper.Count} Took {sw.Elapsed.TotalMilliseconds:F3}ms");
+        //Console.WriteLine($"{looper.Count} Took {sw.Elapsed.TotalMilliseconds:F3}ms");
     }
 
     public void SpawnMap()
